@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>文字如何进入神经网络 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="8"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="current" href="chapter-08.html" aria-current=page><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#_1">一、神经网络只认识数值</a></li>
+<li><a href="#token_1">二、Token 到底是什么</a></li>
+<li><a href="#token_2">三、为什么不能直接“一个词一个 Token”</a></li>
+<li><a href="#tokenizer">四、Tokenizer 的两个核心工作</a></li>
+<li><a href="#token-id">五、为什么 Token ID 不能直接输入神经网络</a></li>
+<li><a href="#embedding">六、Embedding 登场</a></li>
+<li><a href="#nnembedding">七、nn.Embedding 本质上就是查表</a></li>
+<li><a href="#_2">八、那这些向量是谁定的？</a></li>
+<li><a href="#_3">九、语义为什么会出现在向量里</a></li>
+<li><a href="#_4">十、向量距离开始有意义了</a></li>
+<li><a href="#rag-embedding-llm-token-embedding">十一、RAG 的 Embedding 和 LLM 的 Token Embedding 是一回事吗？</a></li>
+<li><a href="#embedding-one-hot">十二、Embedding 为什么不是 One-Hot</a></li>
+<li><a href="#embedding_1">十三、Embedding 其实是降维</a></li>
+<li><a href="#pytorch-embedding">十四、一个小型 PyTorch Embedding 实验</a></li>
+<li><a href="#batch">十五、如果有 Batch 呢？</a></li>
+<li><a href="#seq-len">十六、序列长度 Seq Len 出现了</a></li>
+<li><a href="#padding_1">十七、Padding：把队伍补齐</a></li>
+<li><a href="#pad">十八、但 PAD 不能让模型当正常词处理</a></li>
+<li><a href="#token_3">十九、特殊 Token</a></li>
+<li><a href="#embedding_2">二十、Embedding 有一个致命问题</a></li>
+<li><a href="#_5">二十一、词序非常重要</a></li>
+<li><a href="#transformer">二十二、这就是 Transformer 的入口</a></li>
+<li><a href="#-">二十三、“国王 - 男人 + 女人 = 女王”到底是真的吗？</a></li>
+<li><a href="#embedding-embedding">二十四、静态 Embedding 和上下文 Embedding</a></li>
+<li><a href="#pytorch-nlp">二十五、PyTorch 中的一个微型 NLP 模型</a></li>
+<li><a href="#_8">二十六、为什么这个模型很弱</a></li>
+<li><a href="#attention_1">二十七、Attention 为什么出现</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 08 <span>/ 10 · 约 24 分钟</span></p><h1>文字如何进入神经网络</h1><p class="topics">Token · Embedding · 词表与位置</p><div class="bridge">把训练框架带到文字世界，先让词语拥有数值表示。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="current" href="chapter-08.html" aria-current=page><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#_1">一、神经网络只认识数值</a></li>
+<li><a href="#token_1">二、Token 到底是什么</a></li>
+<li><a href="#token_2">三、为什么不能直接“一个词一个 Token”</a></li>
+<li><a href="#tokenizer">四、Tokenizer 的两个核心工作</a></li>
+<li><a href="#token-id">五、为什么 Token ID 不能直接输入神经网络</a></li>
+<li><a href="#embedding">六、Embedding 登场</a></li>
+<li><a href="#nnembedding">七、nn.Embedding 本质上就是查表</a></li>
+<li><a href="#_2">八、那这些向量是谁定的？</a></li>
+<li><a href="#_3">九、语义为什么会出现在向量里</a></li>
+<li><a href="#_4">十、向量距离开始有意义了</a></li>
+<li><a href="#rag-embedding-llm-token-embedding">十一、RAG 的 Embedding 和 LLM 的 Token Embedding 是一回事吗？</a></li>
+<li><a href="#embedding-one-hot">十二、Embedding 为什么不是 One-Hot</a></li>
+<li><a href="#embedding_1">十三、Embedding 其实是降维</a></li>
+<li><a href="#pytorch-embedding">十四、一个小型 PyTorch Embedding 实验</a></li>
+<li><a href="#batch">十五、如果有 Batch 呢？</a></li>
+<li><a href="#seq-len">十六、序列长度 Seq Len 出现了</a></li>
+<li><a href="#padding_1">十七、Padding：把队伍补齐</a></li>
+<li><a href="#pad">十八、但 PAD 不能让模型当正常词处理</a></li>
+<li><a href="#token_3">十九、特殊 Token</a></li>
+<li><a href="#embedding_2">二十、Embedding 有一个致命问题</a></li>
+<li><a href="#_5">二十一、词序非常重要</a></li>
+<li><a href="#transformer">二十二、这就是 Transformer 的入口</a></li>
+<li><a href="#-">二十三、“国王 - 男人 + 女人 = 女王”到底是真的吗？</a></li>
+<li><a href="#embedding-embedding">二十四、静态 Embedding 和上下文 Embedding</a></li>
+<li><a href="#pytorch-nlp">二十五、PyTorch 中的一个微型 NLP 模型</a></li>
+<li><a href="#_8">二十六、为什么这个模型很弱</a></li>
+<li><a href="#attention_1">二十七、Attention 为什么出现</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：Embedding 是可学习的查表映射，常用较低维的稠密向量，但并不要求 embedding_dim 小于词表大小，也不等于 PCA。设置 padding_idx 只处理该行的梯度等行为，不会自动替后面的均值池化或 Attention 忽略 PAD。</p>
+</blockquote>
+<p>第八天。</p>
+<p>林默刚进实验室，就看到黑板上写着一句话：</p>
+<blockquote>
+<p>今天天气不错。</p>
+</blockquote>
+<p>教授问：</p>
+<p>“把这句话喂给神经网络。”</p>
+<p>林默愣了一下。</p>
+<p>“直接这样？”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="p">(</span><span class="s2">&quot;今天天气不错&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>教授摇头。</p>
+<p>“神经网络不会读中文。”</p>
+<p>“它只认数字。”</p>
+<p>于是，今天真正的问题出现了：</p>
+<blockquote>
+<p><strong>文字，怎么变成数字？</strong></p>
+</blockquote>
+<hr />
+<h2 id="_1">一、神经网络只认识数值</h2>
+<p>前面我们训练模型时，输入都是：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">5.7</span><span class="p">]</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<p>本质都是数字。</p>
+<p>可文本是：</p>
+<div class="codehilite"><pre><span></span><code>我喜欢 PyTorch
+</code></pre></div>
+
+<p>神经网络不能直接对字符做矩阵乘法：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>W</mi><mo>×</mo><mtext>“我”</mtext></mrow><annotation encoding="application/x-tex">
+W \times \text{“我”}
+</annotation></semantics></math></span></p>
+<p>没有意义。</p>
+<p>所以必须先做转换：</p>
+<div class="codehilite"><pre><span></span><code>文字
+ ↓
+数字
+ ↓
+Tensor
+ ↓
+神经网络
+</code></pre></div>
+
+<p>教授在黑板上写下第一个词：</p>
+<h3 id="token">Token</h3>
+<hr />
+<h2 id="token_1">二、Token 到底是什么</h2>
+<p>林默问：</p>
+<p>“Token 就是一个字吗？”</p>
+<p>“有时候是，有时候不是。”</p>
+<p>Token 可以是：</p>
+<div class="codehilite"><pre><span></span><code>一个字
+一个词
+一个词的一部分
+标点
+特殊符号
+</code></pre></div>
+
+<p>比如一句英文：</p>
+<div class="codehilite"><pre><span></span><code>I love PyTorch
+</code></pre></div>
+
+<p>一种最简单的切法：</p>
+<div class="codehilite"><pre><span></span><code>[&quot;I&quot;, &quot;love&quot;, &quot;PyTorch&quot;]
+</code></pre></div>
+
+<p>三个 Token。</p>
+<p>中文：</p>
+<div class="codehilite"><pre><span></span><code>我喜欢PyTorch
+</code></pre></div>
+
+<p>可能切成：</p>
+<div class="codehilite"><pre><span></span><code>[&quot;我&quot;, &quot;喜欢&quot;, &quot;PyTorch&quot;]
+</code></pre></div>
+
+<p>也可能：</p>
+<div class="codehilite"><pre><span></span><code>[&quot;我&quot;, &quot;喜&quot;, &quot;欢&quot;, &quot;Py&quot;, &quot;Torch&quot;]
+</code></pre></div>
+
+<p>不同 tokenizer 规则不同。</p>
+<hr />
+<h2 id="token_2">三、为什么不能直接“一个词一个 Token”</h2>
+<p>林默说：</p>
+<p>“那按照词切不就行了吗？”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>北京
+上海
+程序员
+神经网络
+大模型
+反向传播
+</code></pre></div>
+
+<p>看起来没问题。</p>
+<p>但语言中的词太多了。</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>ChatGPT
+ChatGPT-6
+PyTorch
+PyTorch2
+foobar123
+某个新出现的名字
+</code></pre></div>
+
+<p>如果每个完整词都必须提前放进词表，那么：</p>
+<blockquote>
+<p>新词怎么办？</p>
+</blockquote>
+<p>词表会无限膨胀。</p>
+<p>所以现代大模型常用的是：</p>
+<blockquote>
+<p><strong>Subword Tokenization——子词切分。</strong></p>
+</blockquote>
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>unbelievable
+</code></pre></div>
+
+<p>可能拆成：</p>
+<div class="codehilite"><pre><span></span><code>un
+believ
+able
+</code></pre></div>
+
+<p>这样模型不需要记住世界上所有完整单词。</p>
+<hr />
+<h2 id="tokenizer">四、Tokenizer 的两个核心工作</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>文本
+ ↓
+Tokenizer
+ ↓
+Token
+ ↓
+Token ID
+</code></pre></div>
+
+<p>Tokenizer 主要干两件事。</p>
+<p>第一：</p>
+<blockquote>
+<p>把文本切成 Token。</p>
+</blockquote>
+<p>第二：</p>
+<blockquote>
+<p>给每个 Token 一个整数编号。</p>
+</blockquote>
+<p>例如词表：</p>
+<div class="codehilite"><pre><span></span><code>0  &lt;pad&gt;
+1  &lt;unk&gt;
+2  我
+3  喜欢
+4  PyTorch
+5  Java
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 PyTorch
+</code></pre></div>
+
+<p>就变成：</p>
+<div class="codehilite"><pre><span></span><code>[2, 3, 4]
+</code></pre></div>
+
+<p>于是 PyTorch 终于能处理：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">token_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+</code></pre></div>
+
+<p>林默点头。</p>
+<p>“所以 Token ID 就是 Token 的编号。”</p>
+<p>“对。”</p>
+<p>但教授马上补充：</p>
+<blockquote>
+<p><strong>Token ID 本身没有语义。</strong></p>
+</blockquote>
+<hr />
+<h2 id="token-id">五、为什么 Token ID 不能直接输入神经网络</h2>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>猫 = 10
+狗 = 11
+飞机 = 100
+</code></pre></div>
+
+<p>如果直接把 ID 当数值：</p>
+<div class="codehilite"><pre><span></span><code>猫 = 10
+狗 = 11
+飞机 = 100
+</code></pre></div>
+
+<p>模型可能误以为：</p>
+<div class="codehilite"><pre><span></span><code>狗比猫大 1
+飞机比猫大 90
+</code></pre></div>
+
+<p>但这个数字差没有语义。</p>
+<p>Token ID 只是数据库主键一样的东西。</p>
+<p>就像：</p>
+<div class="codehilite"><pre><span></span><code>user_id = 10001
+user_id = 10002
+</code></pre></div>
+
+<p>不能说明第二个人比第一个人大一点。</p>
+<p>所以需要下一步。</p>
+<hr />
+<h2 id="embedding">六、Embedding 登场</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span>
+    <span class="n">num_embeddings</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">128</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>林默看着这个 API。</p>
+<p>“这是什么？”</p>
+<p>教授说：</p>
+<p>“它可以理解成一张巨大的向量表。”</p>
+<p>假设词表只有 5 个 Token，每个 Token 用 3 维向量表示：</p>
+<div class="codehilite"><pre><span></span><code>Token 0 → [ 0.2, -0.1,  0.7]
+Token 1 → [-0.4,  0.9,  0.3]
+Token 2 → [ 0.8,  0.1, -0.2]
+Token 3 → [ 0.5, -0.7,  0.6]
+Token 4 → [-0.2,  0.4,  0.9]
+</code></pre></div>
+
+<p>这张表就是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mi>m</mi><mi>b</mi><mi>e</mi><mi>d</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>g</mi><mtext> </mtext><mi>M</mi><mi>a</mi><mi>t</mi><mi>r</mi><mi>i</mi><mi>x</mi></mrow><annotation encoding="application/x-tex">
+Embedding\ Matrix
+</annotation></semantics></math></span></p>
+<p>形状：</p>
+<div class="codehilite"><pre><span></span><code>[vocab_size, embedding_dim]
+</code></pre></div>
+
+<hr />
+<h2 id="nnembedding">七、<code>nn.Embedding</code> 本质上就是查表</h2>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+</code></pre></div>
+
+<p>内部参数形状：</p>
+<div class="codehilite"><pre><span></span><code>[10000, 128]
+</code></pre></div>
+
+<p>也就是说：</p>
+<div class="codehilite"><pre><span></span><code>10000 个 Token
+每个 Token 128 维
+</code></pre></div>
+
+<p>输入：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">token_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
+</code></pre></div>
+
+<p>执行：</p>
+<div class="codehilite"><pre><span></span><code>x = embedding(token_ids)
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>shape = [3, 128]
+</code></pre></div>
+
+<p>本质上就是：</p>
+<div class="codehilite"><pre><span></span><code>取第2行
+取第5行
+取第9行
+</code></pre></div>
+
+<p>所以 <code>Embedding</code> 可以粗略理解成：</p>
+<blockquote>
+<p><strong>用 Token ID 去查对应向量。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_2">八、那这些向量是谁定的？</h2>
+<p>林默问：</p>
+<p>“难道人工规定？”</p>
+<p>教授摇头。</p>
+<p>“最重要的地方来了。”</p>
+<p>这些 Embedding：</p>
+<blockquote>
+<p><strong>也是模型参数。</strong></p>
+</blockquote>
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>embedding.weight
+</code></pre></div>
+
+<p>本身就是：</p>
+<div class="codehilite"><pre><span></span><code>Parameter
+</code></pre></div>
+
+<p>训练开始时可能随机：</p>
+<div class="codehilite"><pre><span></span><code>猫 → [0.12, -0.54, 0.33, ...]
+狗 → [-0.72, 0.19, 0.05, ...]
+</code></pre></div>
+
+<p>然后通过：</p>
+<div class="codehilite"><pre><span></span><code>Loss
+ ↓
+backward
+ ↓
+optimizer.step()
+</code></pre></div>
+
+<p>不断调整。</p>
+<p>所以：</p>
+<blockquote>
+<p><strong>词向量不是人写进去的，而是训练出来的。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_3">九、语义为什么会出现在向量里</h2>
+<p>教授写两句话：</p>
+<div class="codehilite"><pre><span></span><code>我养了一只猫。
+
+我养了一只狗。
+</code></pre></div>
+
+<p>在大量语料中：</p>
+<div class="codehilite"><pre><span></span><code>猫
+狗
+</code></pre></div>
+
+<p>经常出现在相似上下文。</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>喂__
+抱__
+宠物__
+可爱的__
+</code></pre></div>
+
+<p>那么为了完成语言预测任务，模型会逐渐学到：</p>
+<blockquote>
+<p>猫和狗在很多语境中有相似功能。</p>
+</blockquote>
+<p>于是它们的向量可能越来越接近。</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>猫 → [0.7, 0.3, -0.2, ...]
+狗 → [0.68, 0.29, -0.18, ...]
+</code></pre></div>
+
+<p>而：</p>
+<div class="codehilite"><pre><span></span><code>数据库
+</code></pre></div>
+
+<p>可能离得很远。</p>
+<p>这就是：</p>
+<blockquote>
+<p><strong>语义进入向量空间。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_4">十、向量距离开始有意义了</h2>
+<p>假设二维世界：</p>
+<div class="codehilite"><pre><span></span><code>          猫 ●
+              狗 ●
+
+
+数据库 ●
+
+
+                         飞机 ●
+</code></pre></div>
+
+<p>猫和狗距离近：</p>
+<div class="codehilite"><pre><span></span><code>相似
+</code></pre></div>
+
+<p>数据库较远：</p>
+<div class="codehilite"><pre><span></span><code>不太相似
+</code></pre></div>
+
+<p>于是可以用：</p>
+<div class="codehilite"><pre><span></span><code>Cosine Similarity
+</code></pre></div>
+
+<p>等指标衡量语义相似程度。</p>
+<p>林默突然反应过来。</p>
+<p>“这不就是我做 RAG 的向量检索？”</p>
+<p>教授点头。</p>
+<hr />
+<h2 id="rag-embedding-llm-token-embedding">十一、RAG 的 Embedding 和 LLM 的 Token Embedding 是一回事吗？</h2>
+<p>这是一个非常容易混淆的问题。</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>LLM 内部 Token Embedding
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>RAG 文本 Embedding
+</code></pre></div>
+
+<p>它们都叫 Embedding。</p>
+<p>但用途不同。</p>
+<hr />
+<h3 id="llm-token-embedding">LLM 的 Token Embedding</h3>
+<p>输入：</p>
+<div class="codehilite"><pre><span></span><code>Token ID
+</code></pre></div>
+
+<p>输出：</p>
+<div class="codehilite"><pre><span></span><code>一个 Token 的向量
+</code></pre></div>
+
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>[batch, seq_len]
+</code></pre></div>
+
+<p>经过：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[batch, seq_len, hidden_dim]
+</code></pre></div>
+
+<p>它是：</p>
+<blockquote>
+<p>Transformer 内部表示的起点。</p>
+</blockquote>
+<hr />
+<h3 id="rag-embedding">RAG Embedding</h3>
+<p>输入通常是：</p>
+<div class="codehilite"><pre><span></span><code>一句话
+一个段落
+一个 chunk
+</code></pre></div>
+
+<p>输出：</p>
+<div class="codehilite"><pre><span></span><code>一个整体语义向量
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>“Redis 为什么快？”
+ ↓
+[0.123, -0.312, ..., 0.88]
+</code></pre></div>
+
+<p>然后存进：</p>
+<div class="codehilite"><pre><span></span><code>pgvector
+Milvus
+FAISS
+</code></pre></div>
+
+<p>做相似度检索。</p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Token Embedding
+→ token 级
+
+
+RAG Embedding
+→ 文本片段级
+</code></pre></div>
+
+<p>虽然背后可能都用神经网络产生向量，但不能简单当成同一个东西。</p>
+<hr />
+<h2 id="embedding-one-hot">十二、Embedding 为什么不是 One-Hot</h2>
+<p>教授又画出旧时代的方法。</p>
+<p>假设词表：</p>
+<div class="codehilite"><pre><span></span><code>猫
+狗
+鸟
+车
+</code></pre></div>
+
+<p>One-Hot：</p>
+<div class="codehilite"><pre><span></span><code>猫 = [1,0,0,0]
+狗 = [0,1,0,0]
+鸟 = [0,0,1,0]
+车 = [0,0,0,1]
+</code></pre></div>
+
+<p>问题来了。</p>
+<p>猫和狗：</p>
+<p>距离？</p>
+<p>猫和车：</p>
+<p>距离？</p>
+<p>从这种表示本身看：</p>
+<blockquote>
+<p>都一样远。</p>
+</blockquote>
+<p>One-Hot 不携带语义相似性。</p>
+<p>而 Embedding：</p>
+<div class="codehilite"><pre><span></span><code>猫 = [0.81, 0.23, -0.11]
+狗 = [0.79, 0.25, -0.09]
+车 = [-0.42, 0.61, 0.77]
+</code></pre></div>
+
+<p>猫狗就可以自然靠近。</p>
+<hr />
+<h2 id="embedding_1">十三、Embedding 其实是降维</h2>
+<p>假设词表：</p>
+<div class="codehilite"><pre><span></span><code>50000
+</code></pre></div>
+
+<p>One-Hot 每个词：</p>
+<div class="codehilite"><pre><span></span><code>50000 维
+</code></pre></div>
+
+<p>但 Embedding 可以：</p>
+<div class="codehilite"><pre><span></span><code>768 维
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>50000维稀疏表示
+ ↓
+768维稠密表示
+</code></pre></div>
+
+<p>而且这 768 维是：</p>
+<blockquote>
+<p><strong>可学习的分布式表示。</strong></p>
+</blockquote>
+<p>这也是深度学习非常关键的思想。</p>
+<hr />
+<h2 id="pytorch-embedding">十四、一个小型 PyTorch Embedding 实验</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span>
+    <span class="n">num_embeddings</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">)</span>
+
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span>
+<span class="p">])</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">embedding</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+<p>输出：</p>
+<div class="codehilite"><pre><span></span><code>torch.Size([3, 4])
+</code></pre></div>
+
+<p>为什么？</p>
+<div class="codehilite"><pre><span></span><code>3 个 Token
+×
+每个 Token 4 维
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>[3,4]
+</code></pre></div>
+
+<hr />
+<h2 id="batch">十五、如果有 Batch 呢？</h2>
+<p>输入：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<p>shape：</p>
+<div class="codehilite"><pre><span></span><code>[2,3]
+</code></pre></div>
+
+<p>意思：</p>
+<div class="codehilite"><pre><span></span><code>2 个样本
+每个样本 3 个 Token
+</code></pre></div>
+
+<p>经过：</p>
+<div class="codehilite"><pre><span></span><code>x = embedding(tokens)
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[2,3,4]
+</code></pre></div>
+
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 2
+seq_len = 3
+embedding_dim = 4
+</code></pre></div>
+
+<p>这组 shape 极其重要。</p>
+<p>因为进入 Transformer 后，你会天天看到：</p>
+<div class="codehilite"><pre><span></span><code>[batch_size, seq_len, hidden_size]
+</code></pre></div>
+
+<hr />
+<h2 id="seq-len">十六、序列长度 Seq Len 出现了</h2>
+<p>一句话：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 PyTorch
+</code></pre></div>
+
+<p>三个 Token：</p>
+<div class="codehilite"><pre><span></span><code>seq_len = 3
+</code></pre></div>
+
+<p>另一句话：</p>
+<div class="codehilite"><pre><span></span><code>我 非常 喜欢 使用 PyTorch 训练 模型
+</code></pre></div>
+
+<p>可能 7 个 Token：</p>
+<div class="codehilite"><pre><span></span><code>seq_len = 7
+</code></pre></div>
+
+<p>但是一个 Batch 需要组织成 Tensor：</p>
+<div class="codehilite"><pre><span></span><code>[batch_size, seq_len]
+</code></pre></div>
+
+<p>问题来了。</p>
+<p>不同句子长度不一样怎么办？</p>
+<p>教授写：</p>
+<h3 id="padding">Padding</h3>
+<hr />
+<h2 id="padding_1">十七、Padding：把队伍补齐</h2>
+<p>句子 A：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 PyTorch
+</code></pre></div>
+
+<p>3 Token。</p>
+<p>句子 B：</p>
+<div class="codehilite"><pre><span></span><code>我 学习
+</code></pre></div>
+
+<p>2 Token。</p>
+<p>如果词表定义：</p>
+<div class="codehilite"><pre><span></span><code>&lt;PAD&gt; = 0
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>A：
+[我, 喜欢, PyTorch]
+
+B：
+[我, 学习, PAD]
+</code></pre></div>
+
+<p>于是长度统一：</p>
+<div class="codehilite"><pre><span></span><code>3
+</code></pre></div>
+
+<p>形成：</p>
+<div class="codehilite"><pre><span></span><code>[batch_size, seq_len]
+</code></pre></div>
+
+<hr />
+<h2 id="pad">十八、但 PAD 不能让模型当正常词处理</h2>
+<p>林默马上发现：</p>
+<p>“那模型不会以为 PAD 也是内容吗？”</p>
+<p>“所以需要 Mask。”</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>Token IDs:
+[12, 35, 98, 0, 0]
+</code></pre></div>
+
+<p>对应：</p>
+<div class="codehilite"><pre><span></span><code>Attention Mask:
+[1, 1, 1, 0, 0]
+</code></pre></div>
+
+<p>意思：</p>
+<div class="codehilite"><pre><span></span><code>1 → 真正 Token
+0 → Padding
+</code></pre></div>
+
+<p>以后 Attention 计算时：</p>
+<blockquote>
+<p>不应该让 PAD 影响正常内容。</p>
+</blockquote>
+<p>这就是：</p>
+<div class="codehilite"><pre><span></span><code>attention_mask
+</code></pre></div>
+
+<p>的一个重要来源。</p>
+<hr />
+<h2 id="token_3">十九、特殊 Token</h2>
+<p>教授又写：</p>
+<div class="codehilite"><pre><span></span><code>[CLS]
+[SEP]
+[BOS]
+[EOS]
+[PAD]
+[UNK]
+</code></pre></div>
+
+<p>不同模型会有不同特殊 Token。</p>
+<p>常见含义：</p>
+<div class="codehilite"><pre><span></span><code>BOS
+→ Begin Of Sequence
+
+
+EOS
+→ End Of Sequence
+
+
+PAD
+→ 补齐
+
+
+UNK
+→ 未知 Token
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>&lt;BOS&gt; 我 喜欢 PyTorch &lt;EOS&gt;
+</code></pre></div>
+
+<p>模型不仅看到内容。</p>
+<p>还知道：</p>
+<div class="codehilite"><pre><span></span><code>句子从哪里开始
+在哪里结束
+</code></pre></div>
+
+<hr />
+<h2 id="embedding_2">二十、Embedding 有一个致命问题</h2>
+<p>教授突然写：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 狗
+</code></pre></div>
+
+<p>经过 Tokenizer：</p>
+<div class="codehilite"><pre><span></span><code>[12, 35, 91]
+</code></pre></div>
+
+<p>经过 Embedding：</p>
+<div class="codehilite"><pre><span></span><code>[
+  vector(我),
+  vector(喜欢),
+  vector(狗)
+]
+</code></pre></div>
+
+<p>林默点头。</p>
+<p>教授又写：</p>
+<div class="codehilite"><pre><span></span><code>狗 喜欢 我
+</code></pre></div>
+
+<p>Tokenizer：</p>
+<div class="codehilite"><pre><span></span><code>[91, 35, 12]
+</code></pre></div>
+
+<p>Embedding：</p>
+<p>还是：</p>
+<div class="codehilite"><pre><span></span><code>vector(狗)
+vector(喜欢)
+vector(我)
+</code></pre></div>
+
+<p>教授问：</p>
+<p>“单看每个 Token 的 Embedding，模型知道谁在第一位吗？”</p>
+<p>林默停住了。</p>
+<p>“Embedding 自己不知道位置。”</p>
+<p>“对。”</p>
+<blockquote>
+<p><code>nn.Embedding</code> 只告诉模型“这是什么 Token”。</p>
+</blockquote>
+<p>却没有告诉模型：</p>
+<blockquote>
+<p>“它在第几个位置。”</p>
+</blockquote>
+<p>于是又出现了一个新问题：</p>
+<h3 id="position">Position</h3>
+<hr />
+<h2 id="_5">二十一、词序非常重要</h2>
+<p>这两句话：</p>
+<div class="codehilite"><pre><span></span><code>狗咬人
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>人咬狗
+</code></pre></div>
+
+<p>Token 基本一样。</p>
+<p>但顺序不同，意义完全不同。</p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Token Embedding
+</code></pre></div>
+
+<p>还不够。</p>
+<p>需要加入：</p>
+<div class="codehilite"><pre><span></span><code>Position Information
+</code></pre></div>
+
+<p>形成：</p>
+<div class="codehilite"><pre><span></span><code>Token Embedding
++
+Position Embedding
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>我
+=
+“我”的语义向量
++
+“第1个位置”的向量
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>喜欢
+=
+“喜欢”的语义向量
++
+“第2个位置”的向量
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>PyTorch
+=
+“PyTorch”的语义向量
++
+“第3个位置”的向量
+</code></pre></div>
+
+<hr />
+<h2 id="transformer">二十二、这就是 Transformer 的入口</h2>
+<p>教授终于画出：</p>
+<div class="codehilite"><pre><span></span><code>文本
+ ↓
+Tokenizer
+ ↓
+Token IDs
+ ↓
+Embedding
+ ↓
+Token Vectors
+ ↓
+加入位置信息
+ ↓
+Transformer
+ ↓
+上下文表示
+</code></pre></div>
+
+<p>林默看着这张图。</p>
+<p>突然发现：</p>
+<p>前七章所有东西都没有白学。</p>
+<p>因为这里仍然是：</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+Parameter
+Module
+Forward
+Loss
+Backward
+Optimizer
+</code></pre></div>
+
+<p>只不过输入从：</p>
+<div class="codehilite"><pre><span></span><code>普通数值
+</code></pre></div>
+
+<p>变成了：</p>
+<div class="codehilite"><pre><span></span><code>Token
+</code></pre></div>
+
+<hr />
+<h2 id="-">二十三、“国王 - 男人 + 女人 = 女王”到底是真的吗？</h2>
+<p>林默突然想起经典例子：</p>
+<div class="codehilite"><pre><span></span><code>king - man + woman ≈ queen
+</code></pre></div>
+
+<p>教授说：</p>
+<p>“这是早期词向量模型里一个非常经典的现象，但不要把它理解成所有现代 Embedding 都严格满足这种算术。”</p>
+<p>核心想表达的是：</p>
+<blockquote>
+<p>向量空间可能学习到某些语义关系方向。</p>
+</blockquote>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>男性 → 女性
+</code></pre></div>
+
+<p>可能对应某种相对稳定的向量变化。</p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>king
+ ↓
+减去某些“男性”关系
+ ↓
+加上某些“女性”关系
+ ↓
+靠近 queen
+</code></pre></div>
+
+<p>但现代 Transformer 的表示更加上下文化。</p>
+<p>同一个词：</p>
+<div class="codehilite"><pre><span></span><code>bank
+</code></pre></div>
+
+<p>在：</p>
+<div class="codehilite"><pre><span></span><code>river bank
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>bank account
+</code></pre></div>
+
+<p>里面，最终上下文表示可能完全不同。</p>
+<hr />
+<h2 id="embedding-embedding">二十四、静态 Embedding 和上下文 Embedding</h2>
+<p>教授写：</p>
+<h3 id="_6">静态词向量</h3>
+<p>例如传统 Word2Vec：</p>
+<div class="codehilite"><pre><span></span><code>“苹果”
+永远一个向量
+</code></pre></div>
+
+<p>不管：</p>
+<div class="codehilite"><pre><span></span><code>我吃了一个苹果
+</code></pre></div>
+
+<p>还是：</p>
+<div class="codehilite"><pre><span></span><code>苹果发布了新手机
+</code></pre></div>
+
+<p>“苹果”的基础词向量是同一个。</p>
+<hr />
+<h3 id="_7">上下文表示</h3>
+<p>Transformer：</p>
+<div class="codehilite"><pre><span></span><code>Token Embedding
+      ↓
+Transformer
+      ↓
+Contextual Representation
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>苹果 + 吃
+</code></pre></div>
+
+<p>可能更偏水果意义。</p>
+<div class="codehilite"><pre><span></span><code>苹果 + iPhone
+</code></pre></div>
+
+<p>可能更偏公司意义。</p>
+<p>这也是 Transformer 强大的关键之一：</p>
+<blockquote>
+<p><strong>一个 Token 最终的表示，会根据上下文改变。</strong></p>
+</blockquote>
+<hr />
+<h2 id="pytorch-nlp">二十五、PyTorch 中的一个微型 NLP 模型</h2>
+<p>教授说：</p>
+<p>“先不学 Transformer，我们做一个极简文本分类。”</p>
+<p>词表：</p>
+<div class="codehilite"><pre><span></span><code>0 PAD
+1 我
+2 喜欢
+3 PyTorch
+4 Java
+5 讨厌
+</code></pre></div>
+
+<p>模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+
+<span class="k">class</span> <span class="nc">TextClassifier</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">,</span> <span class="n">pad_id</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_id</span> <span class="o">=</span> <span class="n">pad_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span>
+            <span class="n">vocab_size</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="n">pad_id</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">embed_dim</span><span class="p">,</span>
+            <span class="n">num_classes</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_ids</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">token_ids</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_id</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">logits</span>
+</code></pre></div>
+
+<p>林默盯住：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">token_ids</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_id</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“这是干什么？”</p>
+<p>教授说：</p>
+<p>“先把所有 Token 向量取平均。”</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>[batch, seq_len, embed_dim]
+</code></pre></div>
+
+<p>变成：</p>
+<div class="codehilite"><pre><span></span><code>[batch, embed_dim]
+</code></pre></div>
+
+<p>相当于把一句话压成一个向量。</p>
+<hr />
+<h2 id="_8">二十六、为什么这个模型很弱</h2>
+<p>模型：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 PyTorch
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>PyTorch 喜欢 我
+</code></pre></div>
+
+<p>平均之后：</p>
+<p>可能得到一样的结果。</p>
+<p>因为：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mo stretchy="false">(</mo><mi>a</mi><mo>+</mo><mi>b</mi><mo>+</mo><mi>c</mi><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><mn>3</mn></mrow><annotation encoding="application/x-tex">
+(a+b+c)/3
+</annotation></semantics></math></span></p>
+<p>和：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mo stretchy="false">(</mo><mi>c</mi><mo>+</mo><mi>b</mi><mo>+</mo><mi>a</mi><mo stretchy="false">)</mo><mi mathvariant="normal">/</mi><mn>3</mn></mrow><annotation encoding="application/x-tex">
+(c+b+a)/3
+</annotation></semantics></math></span></p>
+<p>相同。</p>
+<p>所以它完全不理解顺序。</p>
+<p>林默马上说：</p>
+<p>“这就需要位置信息和 Transformer 了。”</p>
+<p>教授点头。</p>
+<p>“而 Transformer 里面最关键的第一道门，就是——”</p>
+<h3 id="attention">Attention</h3>
+<hr />
+<h2 id="attention_1">二十七、Attention 为什么出现</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>小明把书给了小红，因为她明天要考试。
+</code></pre></div>
+
+<p>问：</p>
+<p>“她是谁？”</p>
+<p>林默：</p>
+<p>“小红。”</p>
+<p>“为什么？”</p>
+<p>“因为我要看上下文。”</p>
+<p>教授点头。</p>
+<p>处理：</p>
+<div class="codehilite"><pre><span></span><code>她
+</code></pre></div>
+
+<p>的时候，模型需要关注：</p>
+<div class="codehilite"><pre><span></span><code>小红
+考试
+给
+书
+</code></pre></div>
+
+<p>不同 Token 的重要程度不同。</p>
+<p>这就是 Attention 最直观的思想：</p>
+<blockquote>
+<p><strong>当处理一个 Token 时，让它主动去查看序列中其他 Token，并决定应该关注谁。</strong></p>
+</blockquote>
+<hr />
+<p>夜里十二点。</p>
+<p>教授把今天所有概念连成一条线：</p>
+<div class="codehilite"><pre><span></span><code>文本
+ ↓
+Tokenizer
+ ↓
+Tokens
+ ↓
+Token IDs
+ ↓
+nn.Embedding
+ ↓
+Token Vectors
+ ↓
+Position
+ ↓
+Attention
+ ↓
+上下文化表示
+ ↓
+Transformer
+ ↓
+LLM
+</code></pre></div>
+
+<p>林默盯着最后四行。</p>
+<p>他已经知道：</p>
+<p>下一章之后，真正的大模型世界就要打开了。</p>
+<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-07.html">← 上一章<span>寻找最低山谷</span></a><a href="chapter-09.html">下一章 →<span>所有词都在互相打量</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

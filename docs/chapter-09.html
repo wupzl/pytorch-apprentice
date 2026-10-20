@@ -1,0 +1,1398 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>所有词都在互相打量 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="9"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#attention_1">一、Attention 最朴素的想法</a></li>
+<li><a href="#self-attention-self">二、Self-Attention 为什么叫“Self”</a></li>
+<li><a href="#_1">三、但模型怎么知道“该关注谁”？</a></li>
+<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a></li>
+<li><a href="#key">五、Key 是什么？</a></li>
+<li><a href="#v">六、那 V 又是什么？</a></li>
+<li><a href="#_2">七、一个生活化比喻</a></li>
+<li><a href="#qkv_1">八、Q、K、V 是怎么来的？</a></li>
+<li><a href="#token">九、为什么同一个 Token 要生成三个版本？</a></li>
+<li><a href="#q-k">十、Q 和 K 怎么算相关性？</a></li>
+<li><a href="#_3">十一、点积到底代表什么？</a></li>
+<li><a href="#attention-score">十二、整个 Attention Score 矩阵</a></li>
+<li><a href="#d">十三、为什么还要除以 √d？</a></li>
+<li><a href="#softmax">十四、为什么要 Softmax？</a></li>
+<li><a href="#v_1">十五、最后为什么乘 V？</a></li>
+<li><a href="#_4">十六、一个极简例子</a></li>
+<li><a href="#self-attention-token">十七、Self-Attention 真正改变了 Token</a></li>
+<li><a href="#pytorch-attention">十八、PyTorch 手写一个最小 Attention</a></li>
+<li><a href="#batch">十九、加上 Batch 之后</a></li>
+<li><a href="#on2">二十、O(n²) 从哪来的？</a></li>
+<li><a href="#_5">二十一、为什么不是只看附近？</a></li>
+<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a></li>
+<li><a href="#_6">二十三、多头注意力是什么？</a></li>
+<li><a href="#_7">二十四、多头怎么合回来？</a></li>
+<li><a href="#pytorch">二十五、PyTorch 里的形状变换</a></li>
+<li><a href="#attention_3">二十六、真正的多头 Attention</a></li>
+<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a></li>
+<li><a href="#causal-mask_1">二十八、Causal Mask</a></li>
+<li><a href="#mask">二十九、Mask 是怎么实现的？</a></li>
+<li><a href="#padding-mask-causal-mask">三十、Padding Mask 和 Causal Mask 不一样</a></li>
+<li><a href="#transformer-attention">三十一、一个真正接近 Transformer 的 Attention 模块</a></li>
+<li><a href="#_8">三十二、公式现在可以读成人话了</a></li>
+<li><a href="#transformer">三十三、但 Transformer 还没完成</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 09 <span>/ 10 · 约 26 分钟</span></p><h1>所有词都在互相打量</h1><p class="topics">Self-Attention · Q/K/V · 多头注意力</p><div class="bridge">有了词向量，还需要让每个词看见自己的上下文。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#attention_1">一、Attention 最朴素的想法</a></li>
+<li><a href="#self-attention-self">二、Self-Attention 为什么叫“Self”</a></li>
+<li><a href="#_1">三、但模型怎么知道“该关注谁”？</a></li>
+<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a></li>
+<li><a href="#key">五、Key 是什么？</a></li>
+<li><a href="#v">六、那 V 又是什么？</a></li>
+<li><a href="#_2">七、一个生活化比喻</a></li>
+<li><a href="#qkv_1">八、Q、K、V 是怎么来的？</a></li>
+<li><a href="#token">九、为什么同一个 Token 要生成三个版本？</a></li>
+<li><a href="#q-k">十、Q 和 K 怎么算相关性？</a></li>
+<li><a href="#_3">十一、点积到底代表什么？</a></li>
+<li><a href="#attention-score">十二、整个 Attention Score 矩阵</a></li>
+<li><a href="#d">十三、为什么还要除以 √d？</a></li>
+<li><a href="#softmax">十四、为什么要 Softmax？</a></li>
+<li><a href="#v_1">十五、最后为什么乘 V？</a></li>
+<li><a href="#_4">十六、一个极简例子</a></li>
+<li><a href="#self-attention-token">十七、Self-Attention 真正改变了 Token</a></li>
+<li><a href="#pytorch-attention">十八、PyTorch 手写一个最小 Attention</a></li>
+<li><a href="#batch">十九、加上 Batch 之后</a></li>
+<li><a href="#on2">二十、O(n²) 从哪来的？</a></li>
+<li><a href="#_5">二十一、为什么不是只看附近？</a></li>
+<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a></li>
+<li><a href="#_6">二十三、多头注意力是什么？</a></li>
+<li><a href="#_7">二十四、多头怎么合回来？</a></li>
+<li><a href="#pytorch">二十五、PyTorch 里的形状变换</a></li>
+<li><a href="#attention_3">二十六、真正的多头 Attention</a></li>
+<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a></li>
+<li><a href="#causal-mask_1">二十八、Causal Mask</a></li>
+<li><a href="#mask">二十九、Mask 是怎么实现的？</a></li>
+<li><a href="#padding-mask-causal-mask">三十、Padding Mask 和 Causal Mask 不一样</a></li>
+<li><a href="#transformer-attention">三十一、一个真正接近 Transformer 的 Attention 模块</a></li>
+<li><a href="#_8">三十二、公式现在可以读成人话了</a></li>
+<li><a href="#transformer">三十三、但 Transformer 还没完成</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：本章最小 SelfAttention 用于观察形状与信息聚合，默认是双向的。nn.MultiheadAttention 的布尔 mask 中 True 表示禁止关注；F.scaled_dot_product_attention 的布尔 mask 中 True 则表示允许参与。避免让某一行的所有 key 都被屏蔽。</p>
+</blockquote>
+<p>第九天。</p>
+<p>教授没有打开代码。</p>
+<p>他只在黑板上写了一句话：</p>
+<blockquote>
+<p>我把苹果手机放在桌子上，因为它没电了。</p>
+</blockquote>
+<p>然后问：</p>
+<p>“这里的‘它’指什么？”</p>
+<p>林默几乎没思考：</p>
+<p>“苹果手机。”</p>
+<p>“为什么不是桌子？”</p>
+<p>“因为‘没电’和手机更相关。”</p>
+<p>教授点头。</p>
+<p>“很好。”</p>
+<p>“人类读一句话时，不是机械地一个词一个词孤立理解。”</p>
+<p>“你会让当前这个词，去参考上下文里其他词。”</p>
+<p>他在黑板上写下：</p>
+<h3 id="attention">Attention</h3>
+<hr />
+<h2 id="attention_1">一、Attention 最朴素的想法</h2>
+<p>假设当前正在处理：</p>
+<div class="codehilite"><pre><span></span><code>它
+</code></pre></div>
+
+<p>那么模型可能会看看：</p>
+<div class="codehilite"><pre><span></span><code>我
+把
+苹果手机
+放在
+桌子
+上
+因为
+它
+没电
+了
+</code></pre></div>
+
+<p>并给不同词不同关注程度。</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机  0.55
+没电      0.25
+桌子      0.03
+我        0.02
+...
+</code></pre></div>
+
+<p>于是：</p>
+<blockquote>
+<p>当前 Token 的新表示，不再只由自己决定，而是会融合上下文信息。</p>
+</blockquote>
+<p>这就是 Attention 的核心。</p>
+<hr />
+<h2 id="self-attention-self">二、Self-Attention 为什么叫“Self”</h2>
+<p>教授问：</p>
+<p>“谁在关注谁？”</p>
+<p>林默回答：</p>
+<p>“句子里的 Token 互相关注？”</p>
+<p>“对。”</p>
+<p>输入序列内部：</p>
+<div class="codehilite"><pre><span></span><code>Token 1
+Token 2
+Token 3
+...
+Token n
+</code></pre></div>
+
+<p>每个 Token 都可以去关注同一序列里的其他 Token。</p>
+<p>所以叫：</p>
+<blockquote>
+<p>Self-Attention</p>
+</blockquote>
+<p>也就是：</p>
+<blockquote>
+<p>序列自己看自己。</p>
+</blockquote>
+<hr />
+<h2 id="_1">三、但模型怎么知道“该关注谁”？</h2>
+<p>教授在黑板上写出三个字母：</p>
+<div class="codehilite"><pre><span></span><code>Q
+
+K
+
+V
+</code></pre></div>
+
+<p>林默皱眉。</p>
+<p>“终于来了。”</p>
+<p>教授笑了。</p>
+<p>“很多人就是从这里开始把 Attention 背成公式。”</p>
+<p>“今天别背。”</p>
+<hr />
+<h2 id="qkv">四、先把 Q、K、V 想成搜索系统</h2>
+<p>教授说：</p>
+<p>“你做过 RAG，对吧？”</p>
+<p>林默点头。</p>
+<p>“假设你现在有一个 query：”</p>
+<div class="codehilite"><pre><span></span><code>Java HashMap 为什么线程不安全？
+</code></pre></div>
+
+<p>你会拿 query 去跟文档里的内容匹配。</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>文档A：HashMap 扩容机制
+文档B：ConcurrentHashMap
+文档C：Spring IOC
+</code></pre></div>
+
+<p>然后判断：</p>
+<div class="codehilite"><pre><span></span><code>Query 和 A 相关程度？
+Query 和 B 相关程度？
+Query 和 C 相关程度？
+</code></pre></div>
+
+<p>Attention 也有点类似。</p>
+<p>对于当前 Token：</p>
+<blockquote>
+<p>我现在想找什么？</p>
+</blockquote>
+<p>这就是：</p>
+<h3 id="query">Query</h3>
+<p>简称：</p>
+<div class="codehilite"><pre><span></span><code>Q
+</code></pre></div>
+
+<hr />
+<h2 id="key">五、Key 是什么？</h2>
+<p>每个被搜索的 Token 都提供一个：</p>
+<blockquote>
+<p>“我有什么特征，可以被别人匹配？”</p>
+</blockquote>
+<p>这就是：</p>
+<h3 id="key_1">Key</h3>
+<p>简称：</p>
+<div class="codehilite"><pre><span></span><code>K
+</code></pre></div>
+
+<p>比如当前：</p>
+<div class="codehilite"><pre><span></span><code>它
+</code></pre></div>
+
+<p>生成的 Q 可能表达：</p>
+<div class="codehilite"><pre><span></span><code>“我现在需要找一个可能被‘没电’修饰的对象。”
+</code></pre></div>
+
+<p>而：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机
+</code></pre></div>
+
+<p>的 K 可能表达：</p>
+<div class="codehilite"><pre><span></span><code>“我是电子设备相关实体。”
+</code></pre></div>
+
+<p>桌子对应的 K：</p>
+<div class="codehilite"><pre><span></span><code>“我是家具。”
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>Q(它)
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>K(苹果手机)
+</code></pre></div>
+
+<p>匹配度很高。</p>
+<p>跟：</p>
+<div class="codehilite"><pre><span></span><code>K(桌子)
+</code></pre></div>
+
+<p>匹配度很低。</p>
+<hr />
+<h2 id="v">六、那 V 又是什么？</h2>
+<p>教授问：</p>
+<p>“如果已经发现苹果手机最相关，接下来怎么办？”</p>
+<p>林默说：</p>
+<p>“把苹果手机的信息拿过来。”</p>
+<p>“对。”</p>
+<p>每个 Token 不仅有：</p>
+<div class="codehilite"><pre><span></span><code>Key
+</code></pre></div>
+
+<p>还带着真正想传递给别人的：</p>
+<h3 id="value">Value</h3>
+<p>简称：</p>
+<div class="codehilite"><pre><span></span><code>V
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Q
+→ 我想找谁？
+
+K
+→ 我适不适合被你找到？
+
+V
+→ 如果你关注我，我真正给你什么信息？
+</code></pre></div>
+
+<hr />
+<h2 id="_2">七、一个生活化比喻</h2>
+<p>教授画了一座图书馆。</p>
+<p>你手里拿着问题：</p>
+<div class="codehilite"><pre><span></span><code>我要找 PyTorch 自动求导相关资料
+</code></pre></div>
+
+<p>这就是：</p>
+<div class="codehilite"><pre><span></span><code>Q
+</code></pre></div>
+
+<p>每本书封面上的关键词：</p>
+<div class="codehilite"><pre><span></span><code>深度学习
+PyTorch
+Java
+数据库
+Autograd
+</code></pre></div>
+
+<p>类似：</p>
+<div class="codehilite"><pre><span></span><code>K
+</code></pre></div>
+
+<p>而书里面真正的正文：</p>
+<div class="codehilite"><pre><span></span><code>V
+</code></pre></div>
+
+<p>搜索流程：</p>
+<div class="codehilite"><pre><span></span><code>Query
+ ↓
+和各个 Key 比较
+ ↓
+得到相关度
+ ↓
+按照相关度
+ ↓
+读取不同 Value
+ ↓
+综合得到结果
+</code></pre></div>
+
+<p>林默马上说：</p>
+<p>“这和向量检索确实很像。”</p>
+<p>“对，但 Attention 是在模型内部动态完成的。”</p>
+<hr />
+<h2 id="qkv_1">八、Q、K、V 是怎么来的？</h2>
+<p>教授把上章输出拿出来。</p>
+<p>经过 Embedding 后：</p>
+<div class="codehilite"><pre><span></span><code>x
+shape:
+[batch, seq_len, hidden_dim]
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>[1, 5, 512]
+</code></pre></div>
+
+<p>意思：</p>
+<div class="codehilite"><pre><span></span><code>1 个句子
+5 个 Token
+每个 Token 512 维
+</code></pre></div>
+
+<p>然后模型拥有三组可学习矩阵：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mi>Q</mi></msub><mo separator="true">,</mo><mtext> </mtext><msub><mi>W</mi><mi>K</mi></msub><mo separator="true">,</mo><mtext> </mtext><msub><mi>W</mi><mi>V</mi></msub></mrow><annotation encoding="application/x-tex">
+W_Q,\ W_K,\ W_V
+</annotation></semantics></math></span></p>
+<p>计算：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>Q</mi></msub></mrow><annotation encoding="application/x-tex">
+Q=XW_Q
+</annotation></semantics></math></span></p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>K</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>K</mi></msub></mrow><annotation encoding="application/x-tex">
+K=XW_K
+</annotation></semantics></math></span></p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>V</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>V</mi></msub></mrow><annotation encoding="application/x-tex">
+V=XW_V
+</annotation></semantics></math></span></p>
+<p>林默问：</p>
+<p>“又是 Linear？”</p>
+<p>“对。”</p>
+<p>PyTorch 里完全可以理解成：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">k_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">v_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+</code></pre></div>
+
+<p>所以：</p>
+<blockquote>
+<p>Q、K、V 并不是凭空出现的。</p>
+</blockquote>
+<p>它们是：</p>
+<blockquote>
+<p>同一个输入表示，经过三种不同的可学习线性投影得到的。</p>
+</blockquote>
+<hr />
+<h2 id="token">九、为什么同一个 Token 要生成三个版本？</h2>
+<p>林默问：</p>
+<p>“直接用原始 Embedding 比不行吗？”</p>
+<p>教授说：</p>
+<p>“因为同一个 Token 在 Attention 中承担三种角色。”</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机
+</code></pre></div>
+
+<p>作为 Query：</p>
+<div class="codehilite"><pre><span></span><code>我现在想找什么信息？
+</code></pre></div>
+
+<p>作为 Key：</p>
+<div class="codehilite"><pre><span></span><code>别人为什么应该关注我？
+</code></pre></div>
+
+<p>作为 Value：</p>
+<div class="codehilite"><pre><span></span><code>如果别人关注我，我提供什么信息？
+</code></pre></div>
+
+<p>这三种角色不一定需要使用同一个向量空间。</p>
+<p>所以模型学习：</p>
+<div class="codehilite"><pre><span></span><code>W_Q
+W_K
+W_V
+</code></pre></div>
+
+<p>把原始表示变成三套不同表示。</p>
+<hr />
+<h2 id="q-k">十、Q 和 K 怎么算相关性？</h2>
+<p>教授写出最核心的一步：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">
+QK^T
+</annotation></semantics></math></span></p>
+<p>林默：</p>
+<p>“矩阵乘法？”</p>
+<p>“对。”</p>
+<p>先看一个 Token。</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>Q = [1, 2]
+</code></pre></div>
+
+<p>苹果手机的：</p>
+<div class="codehilite"><pre><span></span><code>K1 = [1, 3]
+</code></pre></div>
+
+<p>桌子的：</p>
+<div class="codehilite"><pre><span></span><code>K2 = [-1, 0]
+</code></pre></div>
+
+<p>点积：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><mo>⋅</mo><msub><mi>K</mi><mn>1</mn></msub><mo>=</mo><mn>1</mn><mo>×</mo><mn>1</mn><mo>+</mo><mn>2</mn><mo>×</mo><mn>3</mn><mo>=</mo><mn>7</mn></mrow><annotation encoding="application/x-tex">
+Q\cdot K_1
+=
+1\times1+2\times3
+=
+7
+</annotation></semantics></math></span></p>
+<p>而：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><mo>⋅</mo><msub><mi>K</mi><mn>2</mn></msub><mo>=</mo><mn>1</mn><mo>×</mo><mo stretchy="false">(</mo><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo><mo>+</mo><mn>2</mn><mo>×</mo><mn>0</mn><mo>=</mo><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+Q\cdot K_2
+=
+1\times(-1)+2\times0
+=
+-1
+</annotation></semantics></math></span></p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机：7
+桌子：-1
+</code></pre></div>
+
+<p>很自然：</p>
+<blockquote>
+<p>苹果手机相关性更高。</p>
+</blockquote>
+<hr />
+<h2 id="_3">十一、点积到底代表什么？</h2>
+<p>两个向量：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>a</mi><mo>⋅</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+a\cdot b
+</annotation></semantics></math></span></p>
+<p>可以写成：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">∣</mi><mi>a</mi><mi mathvariant="normal">∣</mi><mi mathvariant="normal">∣</mi><mi>b</mi><mi mathvariant="normal">∣</mi><mi>cos</mi><mo>⁡</mo><mi>θ</mi></mrow><annotation encoding="application/x-tex">
+|a||b|\cos\theta
+</annotation></semantics></math></span></p>
+<p>所以当方向更相似：</p>
+<div class="codehilite"><pre><span></span><code>点积通常更大
+</code></pre></div>
+
+<p>在 Attention 里：</p>
+<blockquote>
+<p>Query 和 Key 点积越大，可以理解为它们越匹配。</p>
+</blockquote>
+<p>因此：</p>
+<div class="codehilite"><pre><span></span><code>Q × K^T
+</code></pre></div>
+
+<p>会一次性算出：</p>
+<blockquote>
+<p>每个 Query 和所有 Key 的匹配分数。</p>
+</blockquote>
+<hr />
+<h2 id="attention-score">十二、整个 Attention Score 矩阵</h2>
+<p>假设有 4 个 Token：</p>
+<div class="codehilite"><pre><span></span><code>A
+B
+C
+D
+</code></pre></div>
+
+<p>每个 Token 都生成：</p>
+<div class="codehilite"><pre><span></span><code>Q
+K
+</code></pre></div>
+
+<p>那么：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">
+QK^T
+</annotation></semantics></math></span></p>
+<p>会得到一个：</p>
+<div class="codehilite"><pre><span></span><code>4 × 4
+</code></pre></div>
+
+<p>矩阵：</p>
+<div class="codehilite"><pre><span></span><code>          K_A   K_B   K_C   K_D
+
+Q_A       2.1   0.3   1.7   0.1
+
+Q_B       0.2   3.4   0.8   1.1
+
+Q_C       1.9   0.7   2.5   0.4
+
+Q_D       0.1   1.2   0.5   3.1
+</code></pre></div>
+
+<p>每一行：</p>
+<blockquote>
+<p>一个 Token 在看所有 Token。</p>
+</blockquote>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>Q_C
+</code></pre></div>
+
+<p>这一行：</p>
+<div class="codehilite"><pre><span></span><code>C 对 A 的关注分数
+C 对 B 的关注分数
+C 对 C 的关注分数
+C 对 D 的关注分数
+</code></pre></div>
+
+<hr />
+<h2 id="d">十三、为什么还要除以 √d？</h2>
+<p>教授终于写完整：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac></mrow><annotation encoding="application/x-tex">
+\frac{QK^T}{\sqrt{d_k}}
+</annotation></semantics></math></span></p>
+<p>林默问：</p>
+<p>“这个 <code>√d</code> 到底是干嘛？”</p>
+<p>教授说：</p>
+<p>“如果向量维度很大，点积容易变得很大。”</p>
+<p>比如：</p>
+<p>维度只有 2：</p>
+<div class="codehilite"><pre><span></span><code>点积可能：
+2
+5
+-3
+</code></pre></div>
+
+<p>维度变成 512：</p>
+<p>很多项加起来。</p>
+<p>结果可能：</p>
+<div class="codehilite"><pre><span></span><code>50
+100
+-70
+</code></pre></div>
+
+<p>然后 Softmax：</p>
+<div class="codehilite"><pre><span></span><code>[50, 100, -70]
+</code></pre></div>
+
+<p>会变得极端：</p>
+<div class="codehilite"><pre><span></span><code>≈ [0, 1, 0]
+</code></pre></div>
+
+<p>一旦 Softmax 太饱和：</p>
+<p>梯度可能变得很小。</p>
+<p>所以除以：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mrow><annotation encoding="application/x-tex">
+\sqrt{d_k}
+</annotation></semantics></math></span></p>
+<p>把数值缩小到更稳定的范围。</p>
+<p>这就是：</p>
+<blockquote>
+<p>Scaled Dot-Product Attention</p>
+</blockquote>
+<p>里的：</p>
+<h3 id="scaled">Scaled</h3>
+<hr />
+<h2 id="softmax">十四、为什么要 Softmax？</h2>
+<p>现在得到：</p>
+<div class="codehilite"><pre><span></span><code>scores:
+
+[2.1, 5.7, 0.3, -1.2]
+</code></pre></div>
+
+<p>这还不是权重。</p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>变成：</p>
+<div class="codehilite"><pre><span></span><code>[0.026, 0.934, 0.037, 0.003]
+</code></pre></div>
+
+<p>满足：</p>
+<div class="codehilite"><pre><span></span><code>所有权重 ≥ 0
+
+并且
+
+总和 = 1
+</code></pre></div>
+
+<p>于是这些数字可以解释成：</p>
+<blockquote>
+<p>当前 Token 应该从不同 Token 那里拿多少信息。</p>
+</blockquote>
+<hr />
+<h2 id="v_1">十五、最后为什么乘 V？</h2>
+<p>教授写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>t</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo stretchy="false">(</mo><mi>Q</mi><mo separator="true">,</mo><mi>K</mi><mo separator="true">,</mo><mi>V</mi><mo stretchy="false">)</mo><mo>=</mo><mi>s</mi><mi>o</mi><mi>f</mi><mi>t</mi><mi>m</mi><mi>a</mi><mi>x</mi><mrow><mo fence="true">(</mo><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac><mo fence="true">)</mo></mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">
+Attention(Q,K,V)
+=
+softmax\left(
+\frac{QK^T}{\sqrt{d_k}}
+\right)V
+</annotation></semantics></math></span></p>
+<p>林默终于能拆了。</p>
+<p>第一部分：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">
+QK^T
+</annotation></semantics></math></span></p>
+<p>回答：</p>
+<blockquote>
+<p>谁和谁相关？</p>
+</blockquote>
+<p>第二部分：</p>
+<div class="codehilite"><pre><span></span><code>Softmax
+</code></pre></div>
+
+<p>回答：</p>
+<blockquote>
+<p>每个人应该占多少权重？</p>
+</blockquote>
+<p>第三部分：</p>
+<div class="codehilite"><pre><span></span><code>× V
+</code></pre></div>
+
+<p>回答：</p>
+<blockquote>
+<p>按照这些权重，把真正的信息混合起来。</p>
+</blockquote>
+<hr />
+<h2 id="_4">十六、一个极简例子</h2>
+<p>假设三个 Token：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机
+桌子
+没电
+</code></pre></div>
+
+<p>对于：</p>
+<div class="codehilite"><pre><span></span><code>“它”
+</code></pre></div>
+
+<p>Attention 权重：</p>
+<div class="codehilite"><pre><span></span><code>苹果手机：0.7
+桌子：0.1
+没电：0.2
+</code></pre></div>
+
+<p>对应 Value：</p>
+<div class="codehilite"><pre><span></span><code>V_手机
+V_桌子
+V_没电
+</code></pre></div>
+
+<p>那么输出：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0.7</mn><msub><mi>V</mi><mtext>手机</mtext></msub><mo>+</mo><mn>0.1</mn><msub><mi>V</mi><mtext>桌子</mtext></msub><mo>+</mo><mn>0.2</mn><msub><mi>V</mi><mtext>没电</mtext></msub></mrow><annotation encoding="application/x-tex">
+0.7V_{\text{手机}}
++
+0.1V_{\text{桌子}}
++
+0.2V_{\text{没电}}
+</annotation></semantics></math></span></p>
+<p>所以：</p>
+<blockquote>
+<p>“它”的新表示中，包含了大量手机信息，也融合了一部分“没电”的上下文。</p>
+</blockquote>
+<p>这就是：</p>
+<h3 id="contextual-representation">Contextual Representation</h3>
+<hr />
+<h2 id="self-attention-token">十七、Self-Attention 真正改变了 Token</h2>
+<p>进入 Attention 前：</p>
+<div class="codehilite"><pre><span></span><code>“苹果”
+</code></pre></div>
+
+<p>可能只有基础表示：</p>
+<div class="codehilite"><pre><span></span><code>苹果这个 Token 的初始向量
+</code></pre></div>
+
+<p>但是经过 Attention：</p>
+<p>在：</p>
+<div class="codehilite"><pre><span></span><code>苹果很好吃
+</code></pre></div>
+
+<p>中：</p>
+<p>会融合：</p>
+<div class="codehilite"><pre><span></span><code>吃
+好吃
+</code></pre></div>
+
+<p>的信息。</p>
+<p>在：</p>
+<div class="codehilite"><pre><span></span><code>苹果发布了新款 Mac
+</code></pre></div>
+
+<p>中：</p>
+<p>会融合：</p>
+<div class="codehilite"><pre><span></span><code>发布
+Mac
+</code></pre></div>
+
+<p>的信息。</p>
+<p>所以最终：</p>
+<div class="codehilite"><pre><span></span><code>苹果
+</code></pre></div>
+
+<p>的表示会因上下文不同而不同。</p>
+<p>这就是上一章说的：</p>
+<blockquote>
+<p>上下文化表示。</p>
+</blockquote>
+<hr />
+<h2 id="pytorch-attention">十八、PyTorch 手写一个最小 Attention</h2>
+<p>教授终于打开代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="n">Q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="n">scores</span> <span class="o">=</span> <span class="n">Q</span> <span class="o">@</span> <span class="n">K</span><span class="o">.</span><span class="n">T</span>
+
+<span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span> <span class="o">/</span> <span class="p">(</span><span class="mi">8</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+
+<span class="n">weights</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">output</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">@</span> <span class="n">V</span>
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“shape 是什么？”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>Q: [4, 8]
+K: [4, 8]
+V: [4, 8]
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>K.T
+→ [8, 4]
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Q @ K.T
+
+[4,8] × [8,4]
+
+→ [4,4]
+</code></pre></div>
+
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>Attention Score Matrix
+</code></pre></div>
+
+<p>再：</p>
+<div class="codehilite"><pre><span></span><code>weights @ V
+
+[4,4] × [4,8]
+
+→ [4,8]
+</code></pre></div>
+
+<p>最后：</p>
+<blockquote>
+<p>每个 Token 仍然得到一个 8 维向量。</p>
+</blockquote>
+<hr />
+<h2 id="batch">十九、加上 Batch 之后</h2>
+<p>真实模型不会只有一句话。</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 32
+seq_len = 128
+hidden_dim = 512
+</code></pre></div>
+
+<p>输入：</p>
+<div class="codehilite"><pre><span></span><code>X:
+
+[32, 128, 512]
+</code></pre></div>
+
+<p>生成 Q/K/V 后：</p>
+<div class="codehilite"><pre><span></span><code>Q:
+[32, 128, 512]
+
+K:
+[32, 128, 512]
+
+V:
+[32, 128, 512]
+</code></pre></div>
+
+<p>计算：</p>
+<div class="codehilite"><pre><span></span><code>Q @ K^T
+</code></pre></div>
+
+<p>注意最后两个维度：</p>
+<div class="codehilite"><pre><span></span><code>[128,512]
+×
+[512,128]
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[32,128,128]
+</code></pre></div>
+
+<p>也就是说：</p>
+<p>每个 batch 中：</p>
+<div class="codehilite"><pre><span></span><code>128 个 Token
+×
+128 个 Token
+</code></pre></div>
+
+<p>互相计算相关性。</p>
+<hr />
+<h2 id="on2">二十、O(n²) 从哪来的？</h2>
+<p>教授在黑板上圈住：</p>
+<div class="codehilite"><pre><span></span><code>[seq_len, seq_len]
+</code></pre></div>
+
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>seq_len = n
+</code></pre></div>
+
+<p>Attention Matrix：</p>
+<div class="codehilite"><pre><span></span><code>n × n
+</code></pre></div>
+
+<p>所以计算和内存开销的重要部分会随：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>n</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+n^2
+</annotation></semantics></math></span></p>
+<p>增长。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>n = 1,000
+
+attention matrix:
+1,000,000
+</code></pre></div>
+
+<p>如果：</p>
+<div class="codehilite"><pre><span></span><code>n = 10,000
+</code></pre></div>
+
+<p>变成：</p>
+<div class="codehilite"><pre><span></span><code>100,000,000
+</code></pre></div>
+
+<p>不是增长 10 倍。</p>
+<p>而是：</p>
+<blockquote>
+<p>100 倍。</p>
+</blockquote>
+<p>这就是经典 Self-Attention 长上下文昂贵的重要原因。</p>
+<hr />
+<h2 id="_5">二十一、为什么不是只看附近？</h2>
+<p>林默问：</p>
+<p>“那为什么不只看前后几个 Token？”</p>
+<p>教授说：</p>
+<p>“那当然可以设计。”</p>
+<p>比如 CNN 或局部 Attention 就会限制感受范围。</p>
+<p>但标准 Self-Attention 的强大之处之一就是：</p>
+<blockquote>
+<p>任意两个位置，可以直接建立联系。</p>
+</blockquote>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>序列开头：
+张三今天来到北京……
+
+中间几千字……
+
+最后：
+他决定回家。
+</code></pre></div>
+
+<p>“他”可以直接关注很远之前的“张三”。</p>
+<p>路径长度近似：</p>
+<div class="codehilite"><pre><span></span><code>1
+</code></pre></div>
+
+<p>而不是一层一层传过去。</p>
+<p>这也是 Transformer 相比很多早期序列模型的重要优势。</p>
+<hr />
+<h2 id="attention_2">二十二、但是一个 Attention 头够吗？</h2>
+<p>教授写一句：</p>
+<blockquote>
+<p>小明去银行存了钱，回来的路上坐在河岸边。</p>
+</blockquote>
+<p>“银行”和“河岸”的 bank 是不同含义。</p>
+<p>模型处理语言时，可能同时需要关注：</p>
+<div class="codehilite"><pre><span></span><code>语法关系
+语义关系
+指代关系
+位置关系
+实体关系
+长距离依赖
+</code></pre></div>
+
+<p>如果只有一套：</p>
+<div class="codehilite"><pre><span></span><code>Q/K/V
+</code></pre></div>
+
+<p>相当于只有一种关注视角。</p>
+<p>于是 Transformer 做了一件事：</p>
+<blockquote>
+<p>同时开多个观察窗口。</p>
+</blockquote>
+<p>这就是：</p>
+<h3 id="multi-head-attention">Multi-Head Attention</h3>
+<hr />
+<h2 id="_6">二十三、多头注意力是什么？</h2>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>hidden_dim = 512
+num_heads = 8
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>head_dim = 512 / 8 = 64
+</code></pre></div>
+
+<p>把表示拆成：</p>
+<div class="codehilite"><pre><span></span><code>Head 1 → 64维
+Head 2 → 64维
+Head 3 → 64维
+...
+Head 8 → 64维
+</code></pre></div>
+
+<p>每个 Head 都有自己的：</p>
+<div class="codehilite"><pre><span></span><code>Q
+K
+V
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>Head 1
+可能重点学习语法关系
+
+Head 2
+可能重点学习实体关系
+
+Head 3
+可能重点学习位置关系
+
+...
+</code></pre></div>
+
+<p>注意：</p>
+<p>这只是帮助理解。</p>
+<p>现实中不能简单认定：</p>
+<blockquote>
+<p>某个头一定就是“语法头”或“指代头”。</p>
+</blockquote>
+<p>不同模型内部机制会更复杂。</p>
+<hr />
+<h2 id="_7">二十四、多头怎么合回来？</h2>
+<p>每个 Head 输出：</p>
+<div class="codehilite"><pre><span></span><code>[batch, seq_len, head_dim]
+</code></pre></div>
+
+<p>8 个 Head：</p>
+<div class="codehilite"><pre><span></span><code>8 × 64 = 512
+</code></pre></div>
+
+<p>拼接：</p>
+<div class="codehilite"><pre><span></span><code>Concat
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[batch, seq_len, 512]
+</code></pre></div>
+
+<p>再经过：</p>
+<div class="codehilite"><pre><span></span><code>W_O
+</code></pre></div>
+
+<p>一个输出投影。</p>
+<p>所以整体：</p>
+<div class="codehilite"><pre><span></span><code>X
+ ↓
+分成多个 Head
+ ↓
+各自 Attention
+ ↓
+Concat
+ ↓
+Linear
+ ↓
+输出
+</code></pre></div>
+
+<hr />
+<h2 id="pytorch">二十五、PyTorch 里的形状变换</h2>
+<p>教授写：</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>X:
+[B, N, D]
+</code></pre></div>
+
+<p>其中：</p>
+<div class="codehilite"><pre><span></span><code>B = batch
+N = seq_len
+D = hidden_dim
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>[32,128,512]
+</code></pre></div>
+
+<p>8 头：</p>
+<div class="codehilite"><pre><span></span><code>H = 8
+head_dim = 64
+</code></pre></div>
+
+<p>会 reshape：</p>
+<div class="codehilite"><pre><span></span><code>[32,128,512]
+↓
+[32,128,8,64]
+</code></pre></div>
+
+<p>然后通常 transpose：</p>
+<div class="codehilite"><pre><span></span><code>[32,8,128,64]
+</code></pre></div>
+
+<p>为什么？</p>
+<p>因为我们希望：</p>
+<div class="codehilite"><pre><span></span><code>每个 Batch
+里面
+每个 Head
+独立计算
+128×128 的 Attention
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Q:
+[B,H,N,d]
+
+K:
+[B,H,N,d]
+
+V:
+[B,H,N,d]
+</code></pre></div>
+
+<hr />
+<h2 id="attention_3">二十六、真正的多头 Attention</h2>
+<p>计算：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">
+QK^T
+</annotation></semantics></math></span></p>
+<p>shape：</p>
+<div class="codehilite"><pre><span></span><code>[B,H,N,d]
+×
+[B,H,d,N]
+
+→
+
+[B,H,N,N]
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>每个 Batch
+每个 Head
+
+都有一个：
+
+N × N
+
+Attention Matrix
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>softmax
+</code></pre></div>
+
+<p>再乘：</p>
+<div class="codehilite"><pre><span></span><code>V
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[B,H,N,d]
+</code></pre></div>
+
+<p>再把 Heads 合并回：</p>
+<div class="codehilite"><pre><span></span><code>[B,N,D]
+</code></pre></div>
+
+<hr />
+<h2 id="decoder">二十七、那 Decoder 为什么不能看未来？</h2>
+<p>教授突然写一句：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 吃 苹果
+</code></pre></div>
+
+<p>训练语言模型时：</p>
+<p>当预测：</p>
+<div class="codehilite"><pre><span></span><code>喜欢
+</code></pre></div>
+
+<p>的时候，</p>
+<p>如果让模型直接看到：</p>
+<div class="codehilite"><pre><span></span><code>吃 苹果
+</code></pre></div>
+
+<p>那就是作弊。</p>
+<p>就像考试的时候：</p>
+<blockquote>
+<p>答案直接印在后面。</p>
+</blockquote>
+<p>所以 GPT 这种自回归语言模型还需要：</p>
+<h3 id="causal-mask">Causal Mask</h3>
+<hr />
+<h2 id="causal-mask_1">二十八、Causal Mask</h2>
+<p>假设有四个 Token：</p>
+<div class="codehilite"><pre><span></span><code>A B C D
+</code></pre></div>
+
+<p>标准 Self-Attention：</p>
+<div class="codehilite"><pre><span></span><code>A 可以看 A B C D
+B 可以看 A B C D
+C 可以看 A B C D
+D 可以看 A B C D
+</code></pre></div>
+
+<p>但是 GPT：</p>
+<div class="codehilite"><pre><span></span><code>A 只能看 A
+
+B 能看 A B
+
+C 能看 A B C
+
+D 能看 A B C D
+</code></pre></div>
+
+<p>形成：</p>
+<div class="codehilite"><pre><span></span><code>      A   B   C   D
+
+A     ✓   ×   ×   ×
+B     ✓   ✓   ×   ×
+C     ✓   ✓   ✓   ×
+D     ✓   ✓   ✓   ✓
+</code></pre></div>
+
+<p>这就是：</p>
+<blockquote>
+<p>下三角 Mask。</p>
+</blockquote>
+<hr />
+<h2 id="mask">二十九、Mask 是怎么实现的？</h2>
+<p>在 Softmax 之前。</p>
+<p>原始 Score：</p>
+<div class="codehilite"><pre><span></span><code>[
+ [2.1, 3.2, 1.4, 5.1],
+ ...
+]
+</code></pre></div>
+
+<p>对于未来位置：</p>
+<p>加入：</p>
+<div class="codehilite"><pre><span></span><code>-inf
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>[
+ [2.1, -inf, -inf, -inf],
+ [1.2,  3.1, -inf, -inf],
+ ...
+]
+</code></pre></div>
+
+<p>Softmax 后：</p>
+<div class="codehilite"><pre><span></span><code>exp(-inf) = 0
+</code></pre></div>
+
+<p>所以未来 Token 权重：</p>
+<div class="codehilite"><pre><span></span><code>0
+</code></pre></div>
+
+<p>模型就“看不见”未来。</p>
+<hr />
+<h2 id="padding-mask-causal-mask">三十、Padding Mask 和 Causal Mask 不一样</h2>
+<p>这是很容易混淆的。</p>
+<p>Padding Mask：</p>
+<div class="codehilite"><pre><span></span><code>别看 PAD。
+</code></pre></div>
+
+<p>Causal Mask：</p>
+<div class="codehilite"><pre><span></span><code>别看未来。
+</code></pre></div>
+
+<p>一个解决：</p>
+<div class="codehilite"><pre><span></span><code>无效位置
+</code></pre></div>
+
+<p>一个解决：</p>
+<div class="codehilite"><pre><span></span><code>信息泄露
+</code></pre></div>
+
+<p>有时候两种 Mask 会同时存在。</p>
+<hr />
+<h2 id="transformer-attention">三十一、一个真正接近 Transformer 的 Attention 模块</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+
+<span class="k">class</span> <span class="nc">SelfAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="n">hidden_dim</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="n">hidden_dim</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="n">hidden_dim</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">Q</span> <span class="o">@</span> <span class="n">K</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">d</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span>
+            <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">@</span> <span class="n">V</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+</code></pre></div>
+
+<p>林默看着。</p>
+<p>突然觉得那个经典公式没那么可怕了。</p>
+<p>因为每一行他都知道为什么。</p>
+<hr />
+<h2 id="_8">三十二、公式现在可以读成人话了</h2>
+<p>经典公式：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>t</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo stretchy="false">(</mo><mi>Q</mi><mo separator="true">,</mo><mi>K</mi><mo separator="true">,</mo><mi>V</mi><mo stretchy="false">)</mo><mo>=</mo><mi>s</mi><mi>o</mi><mi>f</mi><mi>t</mi><mi>m</mi><mi>a</mi><mi>x</mi><mrow><mo fence="true">(</mo><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac><mo fence="true">)</mo></mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">
+Attention(Q,K,V)
+=
+softmax
+\left(
+\frac{QK^T}{\sqrt{d_k}}
+\right)V
+</annotation></semantics></math></span></p>
+<p>林默现在会翻译：</p>
+<div class="codehilite"><pre><span></span><code>Q
+↓
+当前 Token 想找什么
+
+
+K
+↓
+其他 Token 提供什么匹配特征
+
+
+QKᵀ
+↓
+两两计算匹配程度
+
+
+÷ √d
+↓
+防止数值过大
+
+
+Softmax
+↓
+把匹配分数变成注意力权重
+
+
+× V
+↓
+按照权重把信息聚合回来
+</code></pre></div>
+
+<p>教授点头。</p>
+<p>“到这里，你才是真的理解了 Attention，而不是会背公式。”</p>
+<hr />
+<h2 id="transformer">三十三、但 Transformer 还没完成</h2>
+<p>林默问：</p>
+<p>“所以 Transformer 就是 Attention？”</p>
+<p>教授摇头。</p>
+<p>“这是很多人的第二个误区。”</p>
+<p>标准 Transformer Block 远不止：</p>
+<div class="codehilite"><pre><span></span><code>Attention
+</code></pre></div>
+
+<p>还包括：</p>
+<div class="codehilite"><pre><span></span><code>LayerNorm
+Residual Connection
+MLP / FFN
+</code></pre></div>
+
+<p>结构大致：</p>
+<div class="codehilite"><pre><span></span><code>Input
+ │
+ ▼
+LayerNorm
+ │
+ ▼
+Multi-Head Attention
+ │
+ ▼
+ + Residual
+ │
+ ▼
+LayerNorm
+ │
+ ▼
+MLP / FFN
+ │
+ ▼
+ + Residual
+ │
+ ▼
+Output
+</code></pre></div>
+
+<p>林默看到：</p>
+<div class="codehilite"><pre><span></span><code>Residual
+LayerNorm
+FFN
+</code></pre></div>
+
+<p>三个陌生东西。</p>
+<p>教授说：</p>
+<p>“Attention 只负责让 Token 之间交换信息。”</p>
+<p>“但是一个深层 Transformer 要堆几十层甚至上百层。”</p>
+<p>“如果没有另外几样东西，训练会变得非常困难。”</p>
+<hr />
+<p>夜已经深了。</p>
+<p>教授在黑板上留下三句话：</p>
+<div class="codehilite"><pre><span></span><code>Attention
+负责：
+
+Token 和 Token 交流
+
+
+MLP
+负责：
+
+每个 Token 自己进行非线性变换
+
+
+Residual + LayerNorm
+负责：
+
+让深层网络更容易训练
+</code></pre></div>
+
+<p>林默看着整张图：</p>
+<div class="codehilite"><pre><span></span><code>Token
+ ↓
+Embedding
+ ↓
+Position
+ ↓
+Attention
+ ↓
+Residual
+ ↓
+LayerNorm
+ ↓
+MLP
+ ↓
+Residual
+ ↓
+LayerNorm
+ ↓
+重复几十层
+ ↓
+Transformer
+</code></pre></div>
+
+<p>真正的大模型轮廓第一次完整出现了。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-08.html">← 上一章<span>文字如何进入神经网络</span></a><a href="chapter-10.html">下一章 →<span>深渊中的通天塔</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

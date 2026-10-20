@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>寻找最低山谷 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="7"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#_1">一、训练模型其实就是下山</a></li>
+<li><a href="#_2">二、梯度是什么？</a></li>
+<li><a href="#_3">三、学习率就是步子大小</a></li>
+<li><a href="#sgd">四、最原始的优化器：SGD</a></li>
+<li><a href="#_6">五、为什么叫随机？</a></li>
+<li><a href="#sgd_1">六、SGD 的问题：像醉汉下山</a></li>
+<li><a href="#momentum">七、Momentum：给小球加惯性</a></li>
+<li><a href="#momentum_1">八、为什么 Momentum 有用？</a></li>
+<li><a href="#adam">九、Adam 登场</a></li>
+<li><a href="#_7">十、为什么需要不同学习率？</a></li>
+<li><a href="#adam_2">十一、Adam 的核心思想</a></li>
+<li><a href="#sgd-vs-momentum-vs-adam">十二、SGD vs Momentum vs Adam</a></li>
+<li><a href="#adamw-w">十三、AdamW 为什么多一个 W？</a></li>
+<li><a href="#adamw">十四、AdamW 的改进</a></li>
+<li><a href="#learning-rate-scheduler">十五、Learning Rate Scheduler</a></li>
+<li><a href="#scheduler">十六、常见 Scheduler</a></li>
+<li><a href="#_8">十七、一个真实训练配置</a></li>
+<li><a href="#schedulerstep">十八、为什么 scheduler.step() 在后面？</a></li>
+<li><a href="#_9">十九、梯度爆炸与梯度裁剪</a></li>
+<li><a href="#optimizerstep">二十、现在重新理解 optimizer.step()</a></li>
+<li><a href="#_10">二十一、整个训练过程现在完整了</a></li>
+<li><a href="#_11">二十二、林默终于理解了一个面试问题</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 07 <span>/ 10 · 约 16 分钟</span></p><h1>寻找最低山谷</h1><p class="topics">SGD · Momentum · AdamW · 学习率</p><div class="bridge">梯度算出来以后，参数究竟应该怎样迈出下一步？</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#_1">一、训练模型其实就是下山</a></li>
+<li><a href="#_2">二、梯度是什么？</a></li>
+<li><a href="#_3">三、学习率就是步子大小</a></li>
+<li><a href="#sgd">四、最原始的优化器：SGD</a></li>
+<li><a href="#_6">五、为什么叫随机？</a></li>
+<li><a href="#sgd_1">六、SGD 的问题：像醉汉下山</a></li>
+<li><a href="#momentum">七、Momentum：给小球加惯性</a></li>
+<li><a href="#momentum_1">八、为什么 Momentum 有用？</a></li>
+<li><a href="#adam">九、Adam 登场</a></li>
+<li><a href="#_7">十、为什么需要不同学习率？</a></li>
+<li><a href="#adam_2">十一、Adam 的核心思想</a></li>
+<li><a href="#sgd-vs-momentum-vs-adam">十二、SGD vs Momentum vs Adam</a></li>
+<li><a href="#adamw-w">十三、AdamW 为什么多一个 W？</a></li>
+<li><a href="#adamw">十四、AdamW 的改进</a></li>
+<li><a href="#learning-rate-scheduler">十五、Learning Rate Scheduler</a></li>
+<li><a href="#scheduler">十六、常见 Scheduler</a></li>
+<li><a href="#_8">十七、一个真实训练配置</a></li>
+<li><a href="#schedulerstep">十八、为什么 scheduler.step() 在后面？</a></li>
+<li><a href="#_9">十九、梯度爆炸与梯度裁剪</a></li>
+<li><a href="#optimizerstep">二十、现在重新理解 optimizer.step()</a></li>
+<li><a href="#_10">二十一、整个训练过程现在完整了</a></li>
+<li><a href="#_11">二十二、林默终于理解了一个面试问题</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：Adam 并非在所有任务上优于 SGD；效果取决于模型、数据与调参。学习率调度器也不是训练必需品：StepLR、CosineAnnealingLR 的调用频率应与 step_size、T_max 的单位一致；ReduceLROnPlateau 则根据验证指标调用。</p>
+</blockquote>
+<p>第七天。</p>
+<p>林默来到实验室。</p>
+<p>今天桌上没有代码。</p>
+<p>只有一张山谷地图。</p>
+<p>上面写着：</p>
+<div class="codehilite"><pre><span></span><code>Loss Landscape
+损失地形
+</code></pre></div>
+
+<p>教授问：</p>
+<p>“昨天我们说训练模型是什么？”</p>
+<p>林默回答：</p>
+<p>“调整参数，让 Loss 降低。”</p>
+<p>教授点头。</p>
+<p>“那么今天的问题是——”</p>
+<p>“知道山在哪里。”</p>
+<p>教授指着山谷：</p>
+<div class="codehilite"><pre><span></span><code>             Loss
+
+               ▲
+               │
+        /\     │
+       /  \    │
+      /    \___│
+_____/          \______
+
+               参数
+</code></pre></div>
+
+<p>“你站在山上。”</p>
+<p>“怎么走到最低点？”</p>
+<hr />
+<h2 id="_1">一、训练模型其实就是下山</h2>
+<p>假设模型只有一个参数：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>w</mi></mrow><annotation encoding="application/x-tex">
+w
+</annotation></semantics></math></span></p>
+<p>Loss：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mo stretchy="false">(</mo><mi>w</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+L(w)
+</annotation></semantics></math></span></p>
+<p>图像：</p>
+<div class="codehilite"><pre><span></span><code>Loss
+
+ ^
+ |
+ |       *
+ |      / \
+ |     /   \
+ |    /     \
+ |___/       \____
+
+             w
+</code></pre></div>
+
+<p>现在：</p>
+<div class="codehilite"><pre><span></span><code>w = 10
+</code></pre></div>
+
+<p>但是最低点：</p>
+<div class="codehilite"><pre><span></span><code>w = 2
+</code></pre></div>
+
+<p>怎么办？</p>
+<p>需要知道：</p>
+<blockquote>
+<p>当前方向哪个地方下降最快。</p>
+</blockquote>
+<p>这就是：</p>
+<h3 id="gradient">Gradient（梯度）</h3>
+<hr />
+<h2 id="_2">二、梯度是什么？</h2>
+<p>上一章我们讲：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>w</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+\frac{\partial L}{\partial w}
+</annotation></semantics></math></span></p>
+<p>它表示：</p>
+<blockquote>
+<p>参数变化一点，Loss 会怎么变化。</p>
+</blockquote>
+<p>例如：</p>
+<p>如果：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>w</mi></mrow></mfrac><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">
+\frac{\partial L}{\partial w}=5
+</annotation></semantics></math></span></p>
+<p>说明：</p>
+<p>当 w 增大：</p>
+<p>Loss 增大。</p>
+<p>所以：</p>
+<p>应该减少 w。</p>
+<p>于是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>w</mi><mo>=</mo><mi>w</mi><mo>−</mo><mi>η</mi><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>w</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+w=w-\eta \frac{\partial L}{\partial w}
+</annotation></semantics></math></span></p>
+<p>其中：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>η</mi></mrow><annotation encoding="application/x-tex">
+\eta
+</annotation></semantics></math></span></p>
+<p>就是：</p>
+<h3 id="learning-rate">Learning Rate（学习率）</h3>
+<hr />
+<h2 id="_3">三、学习率就是步子大小</h2>
+<p>教授画两个人下山。</p>
+<p>第一个：</p>
+<div class="codehilite"><pre><span></span><code>小步：
+
+↓
+↓
+↓
+↓
+</code></pre></div>
+
+<p>第二个：</p>
+<div class="codehilite"><pre><span></span><code>大步：
+
+↘
+
+        ↙
+
+              ↘
+</code></pre></div>
+
+<p>林默马上明白。</p>
+<p>“学习率太大，会不会跨过最低点？”</p>
+<p>教授点头。</p>
+<hr />
+<h3 id="_4">情况一：学习率太大</h3>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>lr = 10
+</code></pre></div>
+
+<p>真正最低点：</p>
+<div class="codehilite"><pre><span></span><code>      ↓
+     ★
+</code></pre></div>
+
+<p>但是一步：</p>
+<div class="codehilite"><pre><span></span><code>当前位置
+
+──────────────→
+
+直接跳过去
+</code></pre></div>
+
+<p>结果：</p>
+<div class="codehilite"><pre><span></span><code>左边
+  ↓
+右边
+  ↓
+左边
+  ↓
+右边
+</code></pre></div>
+
+<p>Loss：</p>
+<div class="codehilite"><pre><span></span><code>10
+50
+20
+80
+...
+</code></pre></div>
+
+<p>模型不收敛。</p>
+<hr />
+<h3 id="_5">情况二：学习率太小</h3>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>lr=0.0000001
+</code></pre></div>
+
+<p>每次：</p>
+<div class="codehilite"><pre><span></span><code>↓
+一点点
+
+↓
+一点点
+</code></pre></div>
+
+<p>可能训练几天：</p>
+<p>还没走到山谷。</p>
+<hr />
+<p>所以：</p>
+<p>学习率是训练中最重要的超参数之一。</p>
+<hr />
+<h2 id="sgd">四、最原始的优化器：SGD</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>SGD：</p>
+<blockquote>
+<p>Stochastic Gradient Descent</p>
+</blockquote>
+<p>随机梯度下降。</p>
+<p>最简单公式：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>w</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>w</mi><mi>t</mi></msub><mo>−</mo><mi>η</mi><msub><mi>g</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+w_{t+1}=w_t-\eta g_t
+</annotation></semantics></math></span></p>
+<p>其中：</p>
+<div class="codehilite"><pre><span></span><code>w_t
+
+当前参数
+
+
+g_t
+
+当前梯度
+</code></pre></div>
+
+<p>翻译成人话：</p>
+<div class="codehilite"><pre><span></span><code>现在在哪里？
+
+↓
+
+看一下坡度
+
+↓
+
+往下降方向走一步
+</code></pre></div>
+
+<hr />
+<h2 id="_6">五、为什么叫随机？</h2>
+<p>林默问：</p>
+<p>“哪里随机？”</p>
+<p>教授回答：</p>
+<p>“因为我们通常不是使用整个 Dataset 算梯度。”</p>
+<p>回忆上一章：</p>
+<div class="codehilite"><pre><span></span><code>100万数据
+
+↓
+
+batch_size=64
+</code></pre></div>
+
+<p>一次：</p>
+<div class="codehilite"><pre><span></span><code>64条数据
+</code></pre></div>
+
+<p>计算：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>batch梯度
+</code></pre></div>
+
+<p>而不是：</p>
+<div class="codehilite"><pre><span></span><code>100万数据整体梯度
+</code></pre></div>
+
+<p>所以叫：</p>
+<blockquote>
+<p>Stochastic。</p>
+</blockquote>
+<p>更严格说，现代深度学习常用的是 mini-batch SGD。</p>
+<hr />
+<h2 id="sgd_1">六、SGD 的问题：像醉汉下山</h2>
+<p>教授画：</p>
+<div class="codehilite"><pre><span></span><code>最低点
+
+        ★
+
+
+路径：
+
+   ↘
+      ↙
+        ↘
+          ↙
+             ★
+</code></pre></div>
+
+<p>为什么？</p>
+<p>因为：</p>
+<p>每个 Batch 不一样。</p>
+<p>Batch 1：</p>
+<div class="codehilite"><pre><span></span><code>方向：
+往左
+</code></pre></div>
+
+<p>Batch 2：</p>
+<div class="codehilite"><pre><span></span><code>方向：
+往右
+</code></pre></div>
+
+<p>Batch 3：</p>
+<div class="codehilite"><pre><span></span><code>方向：
+往左下
+</code></pre></div>
+
+<p>梯度有噪声。</p>
+<p>所以 SGD：</p>
+<div class="codehilite"><pre><span></span><code>效率高
+
+但是摇摇晃晃
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“有没有办法让它有一点惯性？”</p>
+<p>教授笑了。</p>
+<p>“这就是 Momentum。”</p>
+<hr />
+<h2 id="momentum">七、Momentum：给小球加惯性</h2>
+<p>教授画一个球：</p>
+<div class="codehilite"><pre><span></span><code>      ○
+     /
+    /
+   /
+  ★
+</code></pre></div>
+
+<p>普通 SGD：</p>
+<p>每一步：</p>
+<p>看当前坡度。</p>
+<p>Momentum：</p>
+<p>不仅看当前坡度。</p>
+<p>还记住：</p>
+<blockquote>
+<p>我之前往哪里运动。</p>
+</blockquote>
+<hr />
+<p>数学：</p>
+<p>普通 SGD：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mi>t</mi></msub><mo>=</mo><msub><mi>g</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+v_t=g_t
+</annotation></semantics></math></span></p>
+<p>Momentum：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mi>t</mi></msub><mo>=</mo><mi>β</mi><msub><mi>v</mi><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>+</mo><msub><mi>g</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+v_t=\beta v_{t-1}+g_t
+</annotation></semantics></math></span></p>
+<p>然后：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>w</mi><mo>=</mo><mi>w</mi><mo>−</mo><mi>η</mi><msub><mi>v</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+w=w-\eta v_t
+</annotation></semantics></math></span></p>
+<p>这里：</p>
+<div class="codehilite"><pre><span></span><code>v
+
+速度
+</code></pre></div>
+
+<hr />
+<h2 id="momentum_1">八、为什么 Momentum 有用？</h2>
+<p>假设：</p>
+<p>连续几个梯度：</p>
+<div class="codehilite"><pre><span></span><code>↓
+↓
+↓
+</code></pre></div>
+
+<p>Momentum：</p>
+<p>速度不断累积：</p>
+<div class="codehilite"><pre><span></span><code>↓↓↓↓
+</code></pre></div>
+
+<p>所以：</p>
+<p>快速通过平坦区域。</p>
+<p>如果梯度左右摇摆：</p>
+<div class="codehilite"><pre><span></span><code>←
+→
+←
+→
+</code></pre></div>
+
+<p>过去的速度会抵消：</p>
+<p>减少震荡。</p>
+<p>所以：</p>
+<p>Momentum：</p>
+<div class="codehilite"><pre><span></span><code>加速正确方向
+
+减少随机震动
+</code></pre></div>
+
+<hr />
+<h2 id="adam">九、Adam 登场</h2>
+<p>林默看代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>“那 Adam 又是什么？”</p>
+<p>教授写：</p>
+<h3 id="adam_1">Adam</h3>
+<p>全称：</p>
+<blockquote>
+<p>Adaptive Moment Estimation</p>
+</blockquote>
+<p>简单理解：</p>
+<blockquote>
+<p>Momentum + 自动调整每个参数学习率。</p>
+</blockquote>
+<hr />
+<h2 id="_7">十、为什么需要不同学习率？</h2>
+<p>假设模型：</p>
+<p>有两个参数：</p>
+<div class="codehilite"><pre><span></span><code>w1
+
+w2
+</code></pre></div>
+
+<p>训练过程中：</p>
+<p>参数1：</p>
+<p>梯度：</p>
+<div class="codehilite"><pre><span></span><code>0.001
+0.002
+0.003
+</code></pre></div>
+
+<p>变化很慢。</p>
+<p>参数2：</p>
+<p>梯度：</p>
+<div class="codehilite"><pre><span></span><code>10
+20
+30
+</code></pre></div>
+
+<p>变化巨大。</p>
+<p>如果统一：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+</code></pre></div>
+
+<p>可能：</p>
+<p>参数1：</p>
+<div class="codehilite"><pre><span></span><code>几乎不动
+</code></pre></div>
+
+<p>参数2：</p>
+<div class="codehilite"><pre><span></span><code>跳来跳去
+</code></pre></div>
+
+<p>所以 Adam 想：</p>
+<p>“每个参数应该有自己的步长。”</p>
+<hr />
+<h2 id="adam_2">十一、Adam 的核心思想</h2>
+<p>Adam 保存两个东西。</p>
+<h3 id="1">1. 一阶矩</h3>
+<p>类似 Momentum：</p>
+<p>记录：</p>
+<blockquote>
+<p>梯度平均方向</p>
+</blockquote>
+<p>叫：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>m</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+m_t
+</annotation></semantics></math></span></p>
+<p>可以理解：</p>
+<div class="codehilite"><pre><span></span><code>过去梯度趋势
+</code></pre></div>
+
+<hr />
+<h3 id="2">2. 二阶矩</h3>
+<p>记录：</p>
+<blockquote>
+<p>梯度大小变化</p>
+</blockquote>
+<p>叫：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">
+v_t
+</annotation></semantics></math></span></p>
+<p>可以理解：</p>
+<div class="codehilite"><pre><span></span><code>这个参数最近波动大不大
+</code></pre></div>
+
+<hr />
+<p>然后：</p>
+<p>如果某个参数：</p>
+<p>梯度一直很大：</p>
+<p>Adam：</p>
+<div class="codehilite"><pre><span></span><code>降低步子
+</code></pre></div>
+
+<p>如果某个参数：</p>
+<p>梯度很小：</p>
+<p>Adam：</p>
+<div class="codehilite"><pre><span></span><code>适当放大
+</code></pre></div>
+
+<p>所以：</p>
+<blockquote>
+<p>Adam 会给不同参数不同有效学习率。</p>
+</blockquote>
+<hr />
+<h2 id="sgd-vs-momentum-vs-adam">十二、SGD vs Momentum vs Adam</h2>
+<p>教授画表：</p>
+<table>
+<thead>
+<tr>
+<th>优化器</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SGD</td>
+<td>简单，根据当前梯度走</td>
+</tr>
+<tr>
+<td>Momentum</td>
+<td>增加惯性，减少震荡</td>
+</tr>
+<tr>
+<td>Adam</td>
+<td>自适应学习率，训练方便</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p>实际经验：</p>
+<p>很多深度学习任务：</p>
+<div class="codehilite"><pre><span></span><code>Adam / AdamW
+
+↓
+
+默认选择
+</code></pre></div>
+
+<p>尤其：</p>
+<div class="codehilite"><pre><span></span><code>Transformer
+LLM
+RAG模型微调
+</code></pre></div>
+
+<p>大量使用：</p>
+<div class="codehilite"><pre><span></span><code>AdamW
+</code></pre></div>
+
+<hr />
+<h2 id="adamw-w">十三、AdamW 为什么多一个 W？</h2>
+<p>林默问：</p>
+<p>“AdamW 和 Adam 差在哪？”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>Weight Decay
+</code></pre></div>
+
+<p>中文：</p>
+<blockquote>
+<p>权重衰减。</p>
+</blockquote>
+<hr />
+<p>先说为什么需要它。</p>
+<p>假设模型参数：</p>
+<div class="codehilite"><pre><span></span><code>w=100
+</code></pre></div>
+
+<p>模型可能：</p>
+<p>过度依赖这个参数。</p>
+<p>导致：</p>
+<blockquote>
+<p>过拟合。</p>
+</blockquote>
+<p>希望：</p>
+<p>参数不要太大。</p>
+<p>于是加入：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>o</mi><mi>s</mi><msup><mi>s</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi><mo>+</mo><mi>λ</mi><mi mathvariant="normal">∣</mi><mi mathvariant="normal">∣</mi><mi>w</mi><mi mathvariant="normal">∣</mi><msup><mi mathvariant="normal">∣</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+Loss&#x27;=Loss+\lambda ||w||^2
+</annotation></semantics></math></span></p>
+<p>意思：</p>
+<p>除了让预测正确。</p>
+<p>还要求：</p>
+<blockquote>
+<p>参数不要乱膨胀。</p>
+</blockquote>
+<hr />
+<h2 id="adamw">十四、AdamW 的改进</h2>
+<p>Adam：</p>
+<p>在传统 Adam 的耦合式 L2 正则实现中，把 weight_decay 对应的项加入梯度；未设置权重衰减时不存在这一项。</p>
+<p>AdamW：</p>
+<p>把：</p>
+<div class="codehilite"><pre><span></span><code>参数更新
+
+和
+
+权重衰减
+</code></pre></div>
+
+<p>分开。</p>
+<p>实际效果通常更好。</p>
+<p>所以：</p>
+<p>现在训练 Transformer：</p>
+<p>经常看到：</p>
+<div class="codehilite"><pre><span></span><code>optimizer = AdamW(...)
+</code></pre></div>
+
+<hr />
+<h2 id="learning-rate-scheduler">十五、Learning Rate Scheduler</h2>
+<p>林默问：</p>
+<p>“那学习率固定不行吗？”</p>
+<p>教授说：“固定学习率当然可以，调度则提供另一种选择。”</p>
+<p>训练不同阶段：</p>
+<p>需求不同。</p>
+<hr />
+<p>刚开始：</p>
+<p>模型很乱：</p>
+<div class="codehilite"><pre><span></span><code>猫不像猫
+狗不像狗
+</code></pre></div>
+
+<p>希望：</p>
+<p>快速调整。</p>
+<p>需要：</p>
+<div class="codehilite"><pre><span></span><code>大一点 lr
+</code></pre></div>
+
+<hr />
+<p>后期：</p>
+<p>已经接近答案：</p>
+<div class="codehilite"><pre><span></span><code>只差一点
+</code></pre></div>
+
+<p>希望：</p>
+<p>精细调整。</p>
+<p>需要：</p>
+<div class="codehilite"><pre><span></span><code>小一点 lr
+</code></pre></div>
+
+<p>于是：</p>
+<p>学习率变化：</p>
+<div class="codehilite"><pre><span></span><code>lr
+
+0.001
+ |
+ |
+ |
+0.0005
+ |
+ |
+ |
+0.0001
+</code></pre></div>
+
+<p>这就是：</p>
+<blockquote>
+<p>Learning Rate Scheduler</p>
+</blockquote>
+<hr />
+<h2 id="scheduler">十六、常见 Scheduler</h2>
+<h3 id="steplr">StepLR</h3>
+<p>每隔几个 Epoch 降低：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">StepLR</span><span class="p">(</span>
+    <span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">step_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="mf">0.1</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>意思：</p>
+<p>每 10 个 epoch：</p>
+<p>学习率 ×0.1。</p>
+<hr />
+<h3 id="cosine-annealing">Cosine Annealing</h3>
+<p>余弦下降：</p>
+<div class="codehilite"><pre><span></span><code>lr
+
+高
+ \
+  \
+   \
+    \
+     低
+</code></pre></div>
+
+<p>大模型训练非常常见。</p>
+<hr />
+<h3 id="warmup">Warmup</h3>
+<p>Transformer 常见。</p>
+<p>刚开始：</p>
+<p>不要直接大 lr。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>epoch
+
+0:
+0.00001
+
+10:
+0.001
+</code></pre></div>
+
+<p>为什么？</p>
+<p>因为模型刚开始参数随机。</p>
+<p>太大的更新可能破坏训练。</p>
+<p>所以：</p>
+<p>先热身。</p>
+<hr />
+<h2 id="_8">十七、一个真实训练配置</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">MyModel</span><span class="p">()</span>
+
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">3e-4</span><span class="p">,</span>
+    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">CosineAnnealingLR</span><span class="p">(</span>
+    <span class="n">optimizer</span><span class="p">,</span>
+    <span class="n">T_max</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>训练：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+        <span class="n">pred</span><span class="o">=</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">loss</span><span class="o">=</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+
+    <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<hr />
+<h2 id="schedulerstep">十八、为什么 scheduler.step() 在后面？</h2>
+<p>林默注意：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+
+scheduler.step()
+</code></pre></div>
+
+<p>顺序。</p>
+<p>教授说：</p>
+<p>因为：</p>
+<p>一次训练：</p>
+<div class="codehilite"><pre><span></span><code>计算梯度
+
+↓
+
+更新参数
+
+↓
+
+调整下一轮学习率
+</code></pre></div>
+
+<p>通常：</p>
+<p>参数更新使用当前 lr。</p>
+<p>然后：</p>
+<p>准备下一轮。</p>
+<hr />
+<h2 id="_9">十九、梯度爆炸与梯度裁剪</h2>
+<p>教授突然写：</p>
+<div class="codehilite"><pre><span></span><code>Gradient Explosion
+</code></pre></div>
+
+<p>林默皱眉：</p>
+<p>“不是刚说梯度消失？”</p>
+<p>“深度学习两个极端都有。”</p>
+<hr />
+<p>梯度太大：</p>
+<div class="codehilite"><pre><span></span><code>gradient:
+
+1000000
+</code></pre></div>
+
+<p>更新：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>w</mi><mo>=</mo><mi>w</mi><mo>−</mo><mi>η</mi><mi>g</mi></mrow><annotation encoding="application/x-tex">
+w=w-\eta g
+</annotation></semantics></math></span></p>
+<p>可能：</p>
+<p>参数直接飞走。</p>
+<p>Loss：</p>
+<div class="codehilite"><pre><span></span><code>10
+100
+10000
+∞
+</code></pre></div>
+
+<hr />
+<p>解决：</p>
+<p>Gradient Clipping。</p>
+<p>PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">clip_grad_norm_</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">max_norm</span><span class="o">=</span><span class="mf">1.0</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>意思：</p>
+<p>如果梯度太大：</p>
+<p>限制一下。</p>
+<hr />
+<p>训练：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+
+<span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">clip_grad_norm_</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="mf">1.0</span>
+<span class="p">)</span>
+
+
+<span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<hr />
+<h2 id="optimizerstep">二十、现在重新理解 optimizer.step()</h2>
+<p>第一章：</p>
+<p>我们写：</p>
+<div class="codehilite"><pre><span></span><code>w -= lr*w.grad
+</code></pre></div>
+
+<p>现在：</p>
+<p>真实世界：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>内部可能做：</p>
+<p>AdamW:</p>
+<div class="codehilite"><pre><span></span><code>读取 grad
+
+↓
+
+更新一阶矩
+
+↓
+
+更新二阶矩
+
+↓
+
+计算自适应学习率
+
+↓
+
+weight decay
+
+↓
+
+修改参数
+</code></pre></div>
+
+<p>所以：</p>
+<p>它远比简单减法复杂。</p>
+<hr />
+<h2 id="_10">二十一、整个训练过程现在完整了</h2>
+<p>教授画最后一张图：</p>
+<div class="codehilite"><pre><span></span><code>Dataset
+
+↓
+
+DataLoader
+
+↓
+
+Batch
+
+↓
+
+Forward
+
+↓
+
+Prediction
+
+↓
+
+Loss
+
+↓
+
+Backward
+
+↓
+
+Gradient
+
+↓
+
+Optimizer
+
+    |
+    |
+    ├── SGD
+    |
+    ├── Momentum
+    |
+    └── AdamW
+
+↓
+
+Update Parameters
+
+↓
+
+下一轮
+</code></pre></div>
+
+<hr />
+<h2 id="_11">二十二、林默终于理解了一个面试问题</h2>
+<p>面试官问：</p>
+<blockquote>
+<p>“为什么 Adam 比 SGD 常用？”</p>
+</blockquote>
+<p>以前他可能回答：</p>
+<p>“Adam 更先进。”</p>
+<p>现在他会回答：</p>
+<p>“Adam 在 SGD 的基础上引入了一阶动量和二阶矩估计，根据历史梯度信息调整更新方向和有效学习率，使训练过程通常更稳定，对不同参数尺度差异更友好。”</p>
+<hr />
+<p>教授收起笔记。</p>
+<p>“现在你已经掌握了训练一个普通神经网络需要的核心组件。”</p>
+<p>林默看着：</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+Autograd
+Module
+Loss
+Dataset
+DataLoader
+GPU
+Optimizer
+</code></pre></div>
+
+<p>突然问：</p>
+<p>“那如果数据不是图片，也不是表格。”</p>
+<p>“比如……”</p>
+<p>“文本呢？”</p>
+<p>教授停了一下。</p>
+<p>“很好。”</p>
+<p>“因为下一步，你会进入大模型真正的入口。”</p>
+<p>黑板上出现：</p>
+<div class="codehilite"><pre><span></span><code>文字
+ ↓
+Token
+ ↓
+Embedding
+ ↓
+向量
+ ↓
+神经网络
+</code></pre></div>
+
+<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-06.html">← 上一章<span>跨越两界</span></a><a href="chapter-08.html">下一章 →<span>文字如何进入神经网络</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

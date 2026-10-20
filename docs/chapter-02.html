@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>神经网络诞生 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="2"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="current" href="chapter-02.html" aria-current=page><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#_1">一、从一个神经元开始</a></li>
+<li><a href="#_2">二、当一个神经元拥有很多输入</a></li>
+<li><a href="#nnlinear3-1">三、nn.Linear(3, 1) 到底创建了什么？</a></li>
+<li><a href="#tensor-parameter">四、Tensor 与 Parameter</a></li>
+<li><a href="#parameter">五、Parameter 最关键的能力：注册</a></li>
+<li><a href="#nnmodule">六、那 nn.Module 又是什么？</a></li>
+<li><a href="#_3">七、模型其实是一棵树</a></li>
+<li><a href="#modelparameters">八、model.parameters() 到底是什么？</a></li>
+<li><a href="#optimizer">九、Optimizer 并不知道什么叫神经网络</a></li>
+<li><a href="#_4">十、现在造出第一个真正的神经网络</a></li>
+<li><a href="#__init__">十一、拆开 __init__</a></li>
+<li><a href="#forward">十二、forward() 是什么？</a></li>
+<li><a href="#modelx">十三、为什么调用的是 model(x)？</a></li>
+<li><a href="#_5">十四、但是这个网络有一个奇怪的东西</a></li>
+<li><a href="#_6">十五、把模型真正训练起来</a></li>
+<li><a href="#pytorch">十六、PyTorch 训练链路终于完整了</a></li>
+<li><a href="#_7">十七、三个概念终于连起来了</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 02 <span>/ 10 · 约 27 分钟</span></p><h1>神经网络诞生</h1><p class="topics">nn.Module · Linear · Parameter</p><div class="bridge">把上一章的一个参数，组织成可以管理和训练的网络。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="current" href="chapter-02.html" aria-current=page><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#_1">一、从一个神经元开始</a></li>
+<li><a href="#_2">二、当一个神经元拥有很多输入</a></li>
+<li><a href="#nnlinear3-1">三、nn.Linear(3, 1) 到底创建了什么？</a></li>
+<li><a href="#tensor-parameter">四、Tensor 与 Parameter</a></li>
+<li><a href="#parameter">五、Parameter 最关键的能力：注册</a></li>
+<li><a href="#nnmodule">六、那 nn.Module 又是什么？</a></li>
+<li><a href="#_3">七、模型其实是一棵树</a></li>
+<li><a href="#modelparameters">八、model.parameters() 到底是什么？</a></li>
+<li><a href="#optimizer">九、Optimizer 并不知道什么叫神经网络</a></li>
+<li><a href="#_4">十、现在造出第一个真正的神经网络</a></li>
+<li><a href="#__init__">十一、拆开 __init__</a></li>
+<li><a href="#forward">十二、forward() 是什么？</a></li>
+<li><a href="#modelx">十三、为什么调用的是 model(x)？</a></li>
+<li><a href="#_5">十四、但是这个网络有一个奇怪的东西</a></li>
+<li><a href="#_6">十五、把模型真正训练起来</a></li>
+<li><a href="#pytorch">十六、PyTorch 训练链路终于完整了</a></li>
+<li><a href="#_7">十七、三个概念终于连起来了</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：普通 Python list 中的子模块不会自动注册；请使用 nn.ModuleList 或 nn.Sequential。固定状态可用 register_buffer 注册，它会随 model.to(device) 移动，但不会作为可训练参数交给优化器。</p>
+</blockquote>
+<p>第二天。</p>
+<p>林默重新打开昨天的代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">w</span> <span class="o">-=</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">w</span><span class="o">.</span><span class="n">grad</span>
+
+    <span class="n">w</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+</code></pre></div>
+
+<p>他看了半天。</p>
+<p>突然意识到一个问题。</p>
+<p>“教授。”</p>
+<p>“如果模型只有一个 <code>w</code>，我确实可以自己写。”</p>
+<p>“但是 ChatGPT 那种模型有几十亿、几百亿参数……”</p>
+<p>“难道要写——”</p>
+<div class="codehilite"><pre><span></span><code>w1 = ...
+w2 = ...
+w3 = ...
+w4 = ...
+...
+</code></pre></div>
+
+<p>教授喝了一口咖啡。</p>
+<p>“所以今天，我们要制造一个真正的<strong>模型</strong>。”</p>
+<hr />
+<h2 id="_1">一、从一个神经元开始</h2>
+<p>教授在黑板上写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>w</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=wx+b
+</annotation></semantics></math></span></p>
+<p>“认识吗？”</p>
+<p>林默点头。</p>
+<p>“线性函数。”</p>
+<p>“很好。神经网络最基础的结构之一，本质上就是这个。”</p>
+<div class="codehilite"><pre><span></span><code>输入 x
+  │
+  ▼
+× w
+  │
+  ▼
++ b
+  │
+  ▼
+输出 y
+</code></pre></div>
+
+<p>这里有两个东西需要学习：</p>
+<div class="codehilite"><pre><span></span><code>w —— weight，权重
+b —— bias，偏置
+</code></pre></div>
+
+<p>比如：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>2</mn><mi>x</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+y=2x+1
+</annotation></semantics></math></span></p>
+<p>当：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">
+x=3
+</annotation></semantics></math></span></p>
+<p>那么：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>7</mn></mrow><annotation encoding="application/x-tex">
+y=7
+</annotation></semantics></math></span></p>
+<p>教授说：</p>
+<p>“机器学习的问题在于——”</p>
+<blockquote>
+<p><strong>我们不知道 <code>w</code> 和 <code>b</code> 应该是多少。</strong></p>
+</blockquote>
+<p>我们只有很多数据：</p>
+<div class="codehilite"><pre><span></span><code>x       y
+---------
+1       3
+2       5
+3       7
+4       9
+</code></pre></div>
+
+<p>人类一眼就发现：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>2</mn><mi>x</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+y=2x+1
+</annotation></semantics></math></span></p>
+<p>但机器不知道。</p>
+<p>所以训练开始时可能：</p>
+<div class="codehilite"><pre><span></span><code>w = -0.37
+b = 0.82
+</code></pre></div>
+
+<p>然后不断：</p>
+<div class="codehilite"><pre><span></span><code>预测
+ ↓
+算 Loss
+ ↓
+backward
+ ↓
+修改 w、b
+ ↓
+再预测
+</code></pre></div>
+
+<p>最终慢慢变成：</p>
+<div class="codehilite"><pre><span></span><code>w ≈ 2
+b ≈ 1
+</code></pre></div>
+
+<p>林默点头。</p>
+<p>“那我自己定义两个 Tensor 不就行了？”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">b</span>
+</code></pre></div>
+
+<p>“当然可以。”</p>
+<p>教授说。</p>
+<p>“但现在假设，不是一个输入。”</p>
+<hr />
+<h2 id="_2">二、当一个神经元拥有很多输入</h2>
+<p>假设要预测一个程序员的面试成绩。</p>
+<p>输入有三个：</p>
+<div class="codehilite"><pre><span></span><code>x1 = Java 基础
+x2 = 算法能力
+x3 = 项目能力
+</code></pre></div>
+
+<p>模型可能是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>w</mi><mn>1</mn></msub><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><msub><mi>w</mi><mn>3</mn></msub><msub><mi>x</mi><mn>3</mn></msub><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=w_1x_1+w_2x_2+w_3x_3+b
+</annotation></semantics></math></span></p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>Java     = 0.8
+算法     = 0.9
+项目     = 0.7
+</code></pre></div>
+
+<p>对应：</p>
+<div class="codehilite"><pre><span></span><code>w1
+w2
+w3
+b
+</code></pre></div>
+
+<p>都是模型要学习的东西。</p>
+<p>于是可以写成：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mrow><mo fence="true">[</mo><mtable rowspacing="0.16em" columnalign="center center center" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>x</mi><mn>1</mn></msub></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>x</mi><mn>2</mn></msub></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>x</mi><mn>3</mn></msub></mstyle></mtd></mtr></mtable><mo fence="true">]</mo></mrow><mrow><mo fence="true">[</mo><mtable rowspacing="0.16em" columnalign="center" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>w</mi><mn>1</mn></msub></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>w</mi><mn>2</mn></msub></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msub><mi>w</mi><mn>3</mn></msub></mstyle></mtd></mtr></mtable><mo fence="true">]</mo></mrow><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=
+\begin{bmatrix}
+x_1 &amp; x_2 &amp; x_3
+\end{bmatrix}
+\begin{bmatrix}
+w_1\\
+w_2\\
+w_3
+\end{bmatrix}
++b
+</annotation></semantics></math></span></p>
+<p>林默看了一眼。</p>
+<p>“矩阵乘法。”</p>
+<p>“对。”</p>
+<p>“而神经网络里面，大量计算，本质就是矩阵运算。”</p>
+<p>教授打开 PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>林默愣住。</p>
+<p>“就这一行？”</p>
+<p>“就这一行。”</p>
+<hr />
+<h2 id="nnlinear3-1">三、<code>nn.Linear(3, 1)</code> 到底创建了什么？</h2>
+<p>教授把它拆开：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+    <span class="n">in_features</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">out_features</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>意思是：</p>
+<div class="codehilite"><pre><span></span><code>输入 3 个数字
+      │
+      ▼
+┌──────────────┐
+│    Linear    │
+│              │
+│ w1  w2  w3   │
+│      + b     │
+└──────────────┘
+      │
+      ▼
+输出 1 个数字
+</code></pre></div>
+
+<p>数学公式就是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>x</mi><msup><mi>W</mi><mi>T</mi></msup><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=xW^T+b
+</annotation></semantics></math></span></p>
+<p>先不用纠结转置。</p>
+<p>你可以暂时把它理解为：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>w</mi><mn>1</mn></msub><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><msub><mi>w</mi><mn>3</mn></msub><msub><mi>x</mi><mn>3</mn></msub><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=w_1x_1+w_2x_2+w_3x_3+b
+</annotation></semantics></math></span></p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>实际上 PyTorch 已经偷偷帮你创建了：</p>
+<div class="codehilite"><pre><span></span><code>3 个 weight
++
+1 个 bias
+</code></pre></div>
+
+<p>林默不信。</p>
+<p>教授说：</p>
+<p>“打印看看。”</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span>
+</code></pre></div>
+
+<p>你会看到类似：</p>
+<div class="codehilite"><pre><span></span><code>Parameter containing:
+tensor([[ 0.2134, -0.3812, 0.5123]], requires_grad=True)
+</code></pre></div>
+
+<p>以及：</p>
+<div class="codehilite"><pre><span></span><code>Parameter containing:
+tensor([0.1273], requires_grad=True)
+</code></pre></div>
+
+<p>林默注意到一个新东西：</p>
+<blockquote>
+<p><code>Parameter</code></p>
+</blockquote>
+<p>“Tensor 怎么突然变成 Parameter 了？”</p>
+<p>教授笑了。</p>
+<p>“终于问到今天真正重要的地方了。”</p>
+<hr />
+<h2 id="tensor-parameter">四、Tensor 与 Parameter</h2>
+<p>教授写下：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+</code></pre></div>
+
+<p>然后在下面写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span>
+</code></pre></div>
+
+<p>“你可以先这么理解。”</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+│
+│ 普通数据
+│
+├── 输入数据
+├── 标签
+├── 中间计算结果
+└── 其他数值
+
+
+Parameter
+│
+│ 一种特殊 Tensor
+│
+└── 告诉模型：
+    ‘我是需要训练的参数’
+</code></pre></div>
+
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">])</span>
+</code></pre></div>
+
+<p>这个 <code>x</code> 通常只是：</p>
+<blockquote>
+<p><strong>数据。</strong></p>
+</blockquote>
+<p>而：</p>
+<div class="codehilite"><pre><span></span><code>layer.weight
+</code></pre></div>
+
+<p>则是：</p>
+<blockquote>
+<p><strong>模型需要学习的参数。</strong></p>
+</blockquote>
+<p>林默马上问：</p>
+<p>“那 <code>Parameter</code> 不就是 <code>requires_grad=True</code> 的 Tensor？”</p>
+<p>教授摇头。</p>
+<p>“不完全一样。”</p>
+<hr />
+<h2 id="parameter">五、Parameter 最关键的能力：注册</h2>
+<p>教授写了一个模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">))</span>
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>model = MyModel()
+</code></pre></div>
+
+<p>再执行：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</code></pre></div>
+
+<p>可以找到：</p>
+<div class="codehilite"><pre><span></span><code>Parameter containing:
+tensor(1., requires_grad=True)
+</code></pre></div>
+
+<p>“因为 <code>self.w</code> 是 <code>Parameter</code>，并且它被挂在 <code>nn.Module</code> 下面，所以 PyTorch 会把它<strong>注册为模型参数</strong>。”</p>
+<p>教授擦掉代码，换成：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+</code></pre></div>
+
+<p>“现在它虽然也能算梯度，但是——”</p>
+<div class="codehilite"><pre><span></span><code>list(model.parameters())
+</code></pre></div>
+
+<p>并不会因为它只是普通 Tensor 就自动把它当作注册参数。</p>
+<p>林默突然理解了。</p>
+<blockquote>
+<p><code>requires_grad=True</code></p>
+</blockquote>
+<p>解决的是：</p>
+<div class="codehilite"><pre><span></span><code>要不要计算梯度？
+</code></pre></div>
+
+<p>而：</p>
+<blockquote>
+<p><code>nn.Parameter</code></p>
+</blockquote>
+<p>还承担着：</p>
+<div class="codehilite"><pre><span></span><code>这是模型的一个正式参数，
+请 nn.Module 管理它。
+</code></pre></div>
+
+<p>“对。”</p>
+<p>教授点头。</p>
+<p>“这个区别非常重要。”</p>
+<hr />
+<h2 id="nnmodule">六、那 <code>nn.Module</code> 又是什么？</h2>
+<p>林默继续追问：</p>
+<p>“所以 <code>nn.Module</code> 就是模型？”</p>
+<p>“更准确地说——”</p>
+<p>教授想了一下。</p>
+<p>“它是 PyTorch 构建神经网络的<strong>基本组织单位</strong>。”</p>
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<p>可以理解成：</p>
+<div class="codehilite"><pre><span></span><code>Java：
+
+class UserService {
+    ...
+}
+</code></pre></div>
+
+<p>PyTorch：</p>
+<div class="codehilite"><pre><span></span><code>class MyModel(nn.Module):
+    ...
+</code></pre></div>
+
+<p>它帮你管理很多东西：</p>
+<div class="codehilite"><pre><span></span><code>nn.Module
+│
+├── Parameters
+│   ├── weight
+│   └── bias
+│
+├── 子 Module
+│   ├── Linear
+│   ├── ReLU
+│   └── ...
+│
+├── train / eval 状态
+│
+├── state_dict
+│
+└── CPU / GPU 迁移
+</code></pre></div>
+
+<p>林默看到了一个关键点。</p>
+<p>“等等。”</p>
+<p>“你说 <code>Linear</code> 也是 Module？”</p>
+<p>“对。”</p>
+<hr />
+<h2 id="_3">七、模型其实是一棵树</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>看起来：</p>
+<div class="codehilite"><pre><span></span><code>MyModel
+│
+├── fc1
+│   └── Linear
+│       ├── weight
+│       └── bias
+│
+└── fc2
+    └── Linear
+        ├── weight
+        └── bias
+</code></pre></div>
+
+<p>所以一个大型神经网络，本质上可以看成：</p>
+<div class="codehilite"><pre><span></span><code>Module
+├── Module
+│   ├── Parameter
+│   └── Parameter
+│
+├── Module
+│   ├── Module
+│   │   ├── Parameter
+│   │   └── Parameter
+│   └── Module
+│
+└── Module
+</code></pre></div>
+
+<p>层层嵌套。</p>
+<p>最终：</p>
+<blockquote>
+<p><strong>整个模型就是一棵 Module 树。</strong></p>
+</blockquote>
+<p>这也是为什么你可以：</p>
+<div class="codehilite"><pre><span></span><code>model.parameters()
+</code></pre></div>
+
+<p>拿到整个模型里的参数。</p>
+<p>PyTorch 会沿着这棵树递归寻找。</p>
+<hr />
+<h2 id="modelparameters">八、<code>model.parameters()</code> 到底是什么？</h2>
+<p>教授现在写下：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>这个模型内部大概有：</p>
+<div class="codehilite"><pre><span></span><code>weight:
+[w1, w2, w3]
+
+bias:
+[b]
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+</code></pre></div>
+
+<p>就会遍历：</p>
+<div class="codehilite"><pre><span></span><code>weight
+bias
+</code></pre></div>
+
+<p>林默突然想到了昨天见过的代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>他猛地坐直了。</p>
+<p>“等等！”</p>
+<p>“所以这里——”</p>
+<div class="codehilite"><pre><span></span><code>model.parameters()
+</code></pre></div>
+
+<p>“实际上是在把所有需要训练的参数交给 optimizer？”</p>
+<p>教授点头。</p>
+<p>“正是如此。”</p>
+<hr />
+<h2 id="optimizer">九、Optimizer 并不知道什么叫神经网络</h2>
+<p>这是一个很容易产生误解的地方。</p>
+<p>很多人看到：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>会下意识觉得：</p>
+<blockquote>
+<p>Adam 知道这个模型是什么，然后帮模型训练。</p>
+</blockquote>
+<p>其实不是。</p>
+<p>Optimizer 根本不关心：</p>
+<div class="codehilite"><pre><span></span><code>你是不是 Transformer
+你是不是 CNN
+你是不是 RNN
+你是不是大模型
+</code></pre></div>
+
+<p>它只拿到了一堆：</p>
+<div class="codehilite"><pre><span></span><code>Parameter
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>[
+    fc1.weight,
+    fc1.bias,
+    fc2.weight,
+    fc2.bias
+]
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>干的核心事情就是：</p>
+<div class="codehilite"><pre><span></span><code>看看这些 Parameter 的 .grad
+            ↓
+按照优化算法
+            ↓
+修改 Parameter 的值
+</code></pre></div>
+
+<p>比如最简单的 SGD：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>w</mi><mo>=</mo><mi>w</mi><mo>−</mo><mi>η</mi><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>w</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+w=w-\eta\frac{\partial L}{\partial w}
+</annotation></semantics></math></span></p>
+<p>林默看着昨天自己手写的：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">w</span> <span class="o">-=</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">w</span><span class="o">.</span><span class="n">grad</span>
+</code></pre></div>
+
+<p>再看看今天的：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>突然笑了。</p>
+<p>“原来这俩本质上是在干同一类事情。”</p>
+<p>“对。”</p>
+<blockquote>
+<p><code>optimizer.step()</code> 可以看作把“根据梯度更新参数”这件事封装了起来。</p>
+</blockquote>
+<p>当然 Adam 比简单 SGD 的更新规则复杂得多，但核心目标没变。</p>
+<hr />
+<h2 id="_4">十、现在造出第一个真正的神经网络</h2>
+<p>教授说：</p>
+<p>“开始。”</p>
+<p>任务：</p>
+<div class="codehilite"><pre><span></span><code>输入两个数字
+↓
+预测一个数字
+</code></pre></div>
+
+<p>建立模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="k">class</span> <span class="nc">MyNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<p>林默沉默了。</p>
+<p>“这就是……神经网络？”</p>
+<p>“是。”</p>
+<hr />
+<h2 id="__init__">十一、拆开 <code>__init__</code></h2>
+<p>先看：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
+
+<p>意思是：</p>
+<div class="codehilite"><pre><span></span><code>2 个输入
+   │
+   ▼
+4 个输出
+</code></pre></div>
+
+<p>可以想象成：</p>
+<div class="codehilite"><pre><span></span><code>x1 ─────┬────► h1
+        ├────► h2
+        ├────► h3
+        └────► h4
+
+x2 ─────┬────► h1
+        ├────► h2
+        ├────► h3
+        └────► h4
+</code></pre></div>
+
+<p>每条连接都有一个 weight。</p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span>
+</code></pre></div>
+
+<p>是：</p>
+<div class="codehilite"><pre><span></span><code>torch.Size([4, 2])
+</code></pre></div>
+
+<p>为什么？</p>
+<p>因为有：</p>
+<div class="codehilite"><pre><span></span><code>4 个输出神经元
+×
+每个神经元接收 2 个输入
+</code></pre></div>
+
+<p>所以一共：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>4</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>8</mn></mrow><annotation encoding="application/x-tex">
+4\times2=8
+</annotation></semantics></math></span></p>
+<p>个 weight。</p>
+<p>另外：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">shape</span>
+</code></pre></div>
+
+<p>是：</p>
+<div class="codehilite"><pre><span></span><code>[4]
+</code></pre></div>
+
+<p>因为四个输出各自有一个 bias。</p>
+<p>所以第一层总参数：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>8</mn><mo>+</mo><mn>4</mn><mo>=</mo><mn>12</mn></mrow><annotation encoding="application/x-tex">
+8+4=12
+</annotation></semantics></math></span></p>
+<hr />
+<p>第二层：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>有：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn><mo>×</mo><mn>4</mn><mo>=</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">
+1\times4=4
+</annotation></semantics></math></span></p>
+<p>个 weight。</p>
+<p>加一个 bias：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>4</mn><mo>+</mo><mn>1</mn><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">
+4+1=5
+</annotation></semantics></math></span></p>
+<p>整个网络：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>12</mn><mo>+</mo><mn>5</mn><mo>=</mo><mn>17</mn></mrow><annotation encoding="application/x-tex">
+12+5=17
+</annotation></semantics></math></span></p>
+<p>个参数。</p>
+<p>林默看着：</p>
+<div class="codehilite"><pre><span></span><code>model.parameters()
+</code></pre></div>
+
+<p>突然觉得这个 API 不再神秘。</p>
+<p>里面其实就是这 <strong>17 个可学习数值组成的参数 Tensor</strong>。</p>
+<hr />
+<h2 id="forward">十二、<code>forward()</code> 是什么？</h2>
+<p>教授指向：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="o">...</span>  <span class="c1"># 此处只展示结构，完整代码见上下文</span>
+</code></pre></div>
+
+<p>“模型拿到数据以后，怎么计算，就写在这里。”</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>经过第一层：</p>
+<div class="codehilite"><pre><span></span><code>输入
+[ x1, x2 ]
+
+     ↓ Linear
+
+[ h1, h2, h3, h4 ]
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>再：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>最终：</p>
+<div class="codehilite"><pre><span></span><code>4维
+ ↓
+1维
+</code></pre></div>
+
+<p>得到预测值。</p>
+<hr />
+<h2 id="modelx">十三、为什么调用的是 <code>model(x)</code>？</h2>
+<p>林默突然发现一个奇怪的地方。</p>
+<p>我们明明定义的是：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="o">...</span>  <span class="c1"># 此处只展示结构，完整代码见上下文</span>
+</code></pre></div>
+
+<p>但真正使用的时候却通常写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>而不是：</p>
+<div class="codehilite"><pre><span></span><code>y = model.forward(x)
+</code></pre></div>
+
+<p>“为什么？”</p>
+<p>教授说：</p>
+<p>“因为 <code>nn.Module</code> 实现了调用机制。”</p>
+<p>你写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>PyTorch 会经过 <code>Module</code> 自己的调用流程，最终执行你的：</p>
+<div class="codehilite"><pre><span></span><code>forward(x)
+</code></pre></div>
+
+<p>可以粗略理解成：</p>
+<div class="codehilite"><pre><span></span><code>model(x)
+   │
+   ▼
+Module.__call__()
+   │
+   ├── 一些 PyTorch 内部处理
+   │
+   ▼
+forward(x)
+   │
+   ▼
+结果
+</code></pre></div>
+
+<p>所以一般：</p>
+<blockquote>
+<p><strong>调用模型用 <code>model(x)</code>，不要手动直接调 <code>model.forward(x)</code>。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_5">十四、但是这个网络有一个奇怪的东西</h2>
+<p>林默指着：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“这个 ReLU 是干什么的？”</p>
+<p>教授没有直接回答。</p>
+<p>而是在黑板上写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>i</mi><mi>n</mi><mi>e</mi><mi>a</mi><mi>r</mi><mo stretchy="false">(</mo><mi>L</mi><mi>i</mi><mi>n</mi><mi>e</mi><mi>a</mi><mi>r</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+Linear(Linear(x))
+</annotation></semantics></math></span></p>
+<p>假设第一层：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>h</mi><mo>=</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">
+h=W_1x+b_1
+</annotation></semantics></math></span></p>
+<p>第二层：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><mi>h</mi><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2h+b_2
+</annotation></semantics></math></span></p>
+<p>代进去：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><mo stretchy="false">(</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2(W_1x+b_1)+b_2
+</annotation></semantics></math></span></p>
+<p>展开：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>b</mi><mn>1</mn></msub><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2W_1x+W_2b_1+b_2
+</annotation></semantics></math></span></p>
+<p>把：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mn>2</mn></msub><msub><mi>W</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">
+W_2W_1
+</annotation></semantics></math></span></p>
+<p>看成新的：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>W</mi></mrow><annotation encoding="application/x-tex">
+W
+</annotation></semantics></math></span></p>
+<p>把：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mn>2</mn></msub><msub><mi>b</mi><mn>1</mn></msub><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+W_2b_1+b_2
+</annotation></semantics></math></span></p>
+<p>看成新的：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>b</mi></mrow><annotation encoding="application/x-tex">
+b
+</annotation></semantics></math></span></p>
+<p>那么：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>W</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=Wx+b
+</annotation></semantics></math></span></p>
+<p>林默盯着公式。</p>
+<p>过了几秒。</p>
+<p>“等等……”</p>
+<p>“两个 Linear 连起来……”</p>
+<p>“最后还是一个 Linear？”</p>
+<p>“对。”</p>
+<p>“那我堆一百层 Linear——”</p>
+<p>“如果中间什么都不加，本质上仍然只是一个线性变换。”</p>
+<p>林默终于看向：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“所以它是来打破线性的？”</p>
+<p>教授点头。</p>
+<p>“下一章的门已经出现了。”</p>
+<hr />
+<h2 id="_6">十五、把模型真正训练起来</h2>
+<p>不过教授没有马上结束。</p>
+<p>“先把今天所有东西拼起来。”</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="c1"># 1. 数据</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">]</span>
+<span class="p">])</span>
+
+<span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mf">3.0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">5.0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">7.0</span><span class="p">]</span>
+<span class="p">])</span>
+
+
+<span class="c1"># 2. 模型</span>
+<span class="k">class</span> <span class="nc">MyNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">MyNet</span><span class="p">()</span>
+
+
+<span class="c1"># 3. 损失函数</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+
+
+<span class="c1"># 4. 优化器</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+
+<span class="c1"># 5. 训练</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>林默看着这段代码。</p>
+<p>昨天所有零散的东西，终于连接起来了。</p>
+<hr />
+<h2 id="pytorch">十六、PyTorch 训练链路终于完整了</h2>
+<p>教授画下：</p>
+<div class="codehilite"><pre><span></span><code>                    MyNet
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+       Linear                  Linear
+          │                       │
+    weight / bias           weight / bias
+          │                       │
+          └───────────┬───────────┘
+                      │
+              model.parameters()
+                      │
+                      ▼
+                  Optimizer
+</code></pre></div>
+
+<p>训练的时候：</p>
+<div class="codehilite"><pre><span></span><code>x
+│
+▼
+model(x)
+│
+▼
+prediction
+│
+▼
+loss_fn(prediction, target)
+│
+▼
+Loss
+│
+▼
+loss.backward()
+│
+▼
+每个 Parameter.grad 有了梯度
+│
+▼
+optimizer.step()
+│
+▼
+根据 grad 修改 Parameter
+│
+▼
+模型变了一点
+│
+▼
+下一轮
+</code></pre></div>
+
+<p>林默盯着最后一张图。</p>
+<p>突然说道：</p>
+<p>“所以 <code>backward()</code> 和 <code>optimizer.step()</code> 其实是完全不同的事情。”</p>
+<p>教授停下脚步。</p>
+<p>“说下去。”</p>
+<p>林默慢慢整理：</p>
+<div class="codehilite"><pre><span></span><code>loss.backward()
+</code></pre></div>
+
+<p>负责：</p>
+<blockquote>
+<p><strong>算梯度。</strong></p>
+</blockquote>
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>每个参数应该往哪个方向改？
+</code></pre></div>
+
+<p>而：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>负责：</p>
+<blockquote>
+<p><strong>根据梯度真正修改参数。</strong></p>
+</blockquote>
+<p>教授点头。</p>
+<p>“非常重要。”</p>
+<p>可以压缩成：</p>
+<div class="codehilite"><pre><span></span><code>backward()
+    ↓
+算答案
+
+step()
+    ↓
+执行答案
+</code></pre></div>
+
+<p>更准确地说：</p>
+<div class="codehilite"><pre><span></span><code>backward()
+→ 计算并累积梯度到 Parameter.grad
+
+optimizer.step()
+→ 根据优化算法和 Parameter.grad 更新参数
+</code></pre></div>
+
+<hr />
+<h2 id="_7">十七、三个概念终于连起来了</h2>
+<p>凌晨一点。</p>
+<p>林默在自己的笔记最后写下：</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+↓
+负责装数据、参与计算
+
+
+Parameter
+↓
+特殊 Tensor
+代表模型需要学习的参数
+被 Module 注册和管理
+
+
+nn.Module
+↓
+组织 Parameter 和其他 Module
+组成整个神经网络
+</code></pre></div>
+
+<p>再往下：</p>
+<div class="codehilite"><pre><span></span><code>nn.Linear
+↓
+本身就是一个 nn.Module
+↓
+内部拥有
+weight Parameter
+bias Parameter
+</code></pre></div>
+
+<p>最后：</p>
+<div class="codehilite"><pre><span></span><code>model.parameters()
+↓
+收集模型注册的参数
+↓
+交给 optimizer
+↓
+optimizer 根据 .grad 更新它们
+</code></pre></div>
+
+<p>他忽然觉得，昨天那十几行代码和今天的神经网络，其实根本没有本质区别。</p>
+<p>昨天：</p>
+<div class="codehilite"><pre><span></span><code>w -= lr * w.grad
+</code></pre></div>
+
+<p>今天：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>昨天：</p>
+<div class="codehilite"><pre><span></span><code>y = w * x
+</code></pre></div>
+
+<p>今天：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>昨天只有一个 <code>w</code>。</p>
+<p>今天只不过有了成千上万个 <code>w</code>。</p>
+<hr />
+<p>教授已经走到了门口。</p>
+<p>林默却再次叫住他。</p>
+<p>“刚才那个问题还没讲。”</p>
+<p>“为什么神经网络一定需要 ReLU？”</p>
+<p>教授回头看了一眼黑板。</p>
+<p>黑板上，两层 Linear 已经被化简成了一层：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mn>2</mn></msub><mo stretchy="false">(</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+W_2(W_1x+b_1)+b_2
+</annotation></semantics></math></span></p>
+<p>“因为如果没有它……”</p>
+<p>“你造出来的所谓深度神经网络，无论叠多少层，都可能只是在做一件非常简单的事。”</p>
+<p>灯熄灭。</p>
+<p>黑板上只剩下一个词：</p>
+<h3 id="relu"><code>ReLU</code></h3>
+<p><strong>下一章：《让神经网络学会拐弯——激活函数、ReLU 与非线性》</strong></p>
+<p>下一章会解决一个特别关键的问题：<strong>为什么 <code>Linear → ReLU → Linear</code> 能拟合复杂规律，而 <code>Linear → Linear → Linear</code> 堆一百层在表达能力上仍然只是线性变换。</strong>这也是理解后面 MLP、CNN 乃至 Transformer 中非线性层的基础。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-01.html">← 上一章<span>一块奇怪的石板</span></a><a href="chapter-03.html">下一章 →<span>让神经网络学会拐弯</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

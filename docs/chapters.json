@@ -1,0 +1,62 @@
+[
+  {
+    "number": 1,
+    "title": "一块奇怪的石板",
+    "topics": "Tensor · Autograd · 第一次训练",
+    "minutes": 17
+  },
+  {
+    "number": 2,
+    "title": "神经网络诞生",
+    "topics": "nn.Module · Linear · Parameter",
+    "minutes": 27
+  },
+  {
+    "number": 3,
+    "title": "让神经网络学会拐弯",
+    "topics": "激活函数 · ReLU · 非线性",
+    "minutes": 22
+  },
+  {
+    "number": 4,
+    "title": "审判模型的法官",
+    "topics": "Loss · MSE · Softmax · CrossEntropy",
+    "minutes": 27
+  },
+  {
+    "number": 5,
+    "title": "粮草与运输队",
+    "topics": "Dataset · DataLoader · Batch · Epoch",
+    "minutes": 33
+  },
+  {
+    "number": 6,
+    "title": "跨越两界",
+    "topics": "GPU · CUDA · train() · eval()",
+    "minutes": 21
+  },
+  {
+    "number": 7,
+    "title": "寻找最低山谷",
+    "topics": "SGD · Momentum · AdamW · 学习率",
+    "minutes": 16
+  },
+  {
+    "number": 8,
+    "title": "文字如何进入神经网络",
+    "topics": "Token · Embedding · 词表与位置",
+    "minutes": 24
+  },
+  {
+    "number": 9,
+    "title": "所有词都在互相打量",
+    "topics": "Self-Attention · Q/K/V · 多头注意力",
+    "minutes": 26
+  },
+  {
+    "number": 10,
+    "title": "深渊中的通天塔",
+    "topics": "Residual · LayerNorm · FFN · Transformer Block",
+    "minutes": 48
+  }
+]

@@ -1,0 +1,35 @@
+# 内容整理说明
+
+这是一部以林默和陈教授的对话串起概念的 PyTorch 入门读物。本次发布现有十章；第十一章仅有预告，标记为待续。
+
+## 保留了什么
+
+保留十章学习顺序与主要情节：Tensor → 自动求导 → Module → 非线性 → Loss → 数据与设备 → 优化器 → Embedding → Attention → Transformer Block。它们已构成连贯的入门路线，无需整体重写。
+
+## 改良了什么
+
+- 去除独立的聊天续写指令，统一章内标题层级，精简重复的下一章预告。
+- 修复第十章丢失换行的 ResidualBlock、TransformerBlock、LayerNorm、FFN 与因果掩码代码；统一其公式转义。
+- 修正第八章分类器的均值池化，使 PAD 不参与平均，并使用 padding_idx。
+- 澄清梯度方向、局部下降与泛化、仿射层、模块注册、分类标签形状、Windows 多进程、设备与优化器创建顺序。
+- 澄清 Adam 的耦合式权重衰减、AdamW、学习率调度频率，以及不同 Attention API 的布尔掩码约定。
+- 保留原稿第十章已有的纸上练习，补充参考答案；移除“0/5 已回答”等失去交互的界面残留。
+- 增加两份独立可运行示例及安装、运行说明。
+
+## 技术资料
+
+易错 API 说明对照以下官方资料整理。文中类比服务于直觉理解，并非对实际模型内部行为的精确描述。
+
+- [Autograd 与评估模式](https://docs.pytorch.org/docs/stable/notes/autograd.html)
+- [CrossEntropyLoss](https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html)
+- [Embedding](https://docs.pytorch.org/docs/stable/generated/torch.nn.Embedding.html)
+- [MultiheadAttention](https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html)
+- [Scaled dot product attention](https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html)
+- [优化器与学习率调度](https://docs.pytorch.org/docs/stable/optim.html)
+- [官方安装说明](https://pytorch.org/get-started/locally/)
+
+## 文件与维护
+
+原稿完整保留在 source/pytorch-original.md。chapters/ 是整理后的内容源，后续修改这里，再运行 python build.py。构建不会重新导入原稿，避免覆盖人工编辑。prepare.py 仅用于首次导入，不应在日常构建时运行。
+
+阅读进度、主题和字号仅保存在当前浏览器，不跨设备同步。搜索覆盖正文与代码，首次打开搜索时加载本地索引。正文、代码高亮、公式和字体显示不依赖外部 CDN。

@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>一块奇怪的石板 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="1"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="current" href="chapter-01.html" aria-current=page><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#tensor">一、Tensor 到底是什么？</a></li>
+<li><a href="#pytorch-numpy">二、那 PyTorch 和 NumPy 有什么区别？</a></li>
+<li><a href="#_1">三、会记住自己经历过什么的数字</a></li>
+<li><a href="#tensor_1">四、真正重要的不是 Tensor，而是它背后的世界</a></li>
+<li><a href="#_2">五、为什么神经网络非得求导？</a></li>
+<li><a href="#_3">六、梯度其实就是“往哪边走”</a></li>
+<li><a href="#_4">七、第一次真正的“训练”</a></li>
+<li><a href="#_5">八、逐行拆开</a></li>
+<li><a href="#_6">九、梯度默认会累加</a></li>
+<li><a href="#torchno_grad">十、为什么更新参数要 torch.no_grad()？</a></li>
+<li><a href="#pytorch">十一、第一张 PyTorch 世界地图</a></li>
+<li><a href="#pytorch_1">十二、林默第一次理解了 PyTorch</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 01 <span>/ 10 · 约 17 分钟</span></p><h1>一块奇怪的石板</h1><p class="topics">Tensor · Autograd · 第一次训练</p><div class="bridge">从一个数字开始，看参数怎样迈出学习的第一步。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="current" href="chapter-01.html" aria-current=page><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#tensor">一、Tensor 到底是什么？</a></li>
+<li><a href="#pytorch-numpy">二、那 PyTorch 和 NumPy 有什么区别？</a></li>
+<li><a href="#_1">三、会记住自己经历过什么的数字</a></li>
+<li><a href="#tensor_1">四、真正重要的不是 Tensor，而是它背后的世界</a></li>
+<li><a href="#_2">五、为什么神经网络非得求导？</a></li>
+<li><a href="#_3">六、梯度其实就是“往哪边走”</a></li>
+<li><a href="#_4">七、第一次真正的“训练”</a></li>
+<li><a href="#_5">八、逐行拆开</a></li>
+<li><a href="#_6">九、梯度默认会累加</a></li>
+<li><a href="#torchno_grad">十、为什么更新参数要 torch.no_grad()？</a></li>
+<li><a href="#pytorch">十一、第一张 PyTorch 世界地图</a></li>
+<li><a href="#pytorch_1">十二、林默第一次理解了 PyTorch</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：“下山”是局部近似：梯度指向局部上升最快的方向，负梯度才是下降方向；学习率过大时，更新仍可能让损失升高。这里用单个样本演示训练机制，不代表模型已学会对未知数据泛化。</p>
+</blockquote>
+<p>凌晨两点。</p>
+<p>林默盯着屏幕上的代码。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+</code></pre></div>
+
+<p>只有这一行。</p>
+<p>他已经看了半个小时。</p>
+<p>“所以……PyTorch 到底是什么？”</p>
+<p>导师陈教授把咖啡放到桌上。</p>
+<p>“你以前写 Java，对吧？”</p>
+<p>“对。”</p>
+<p>“那你应该习惯这样的世界。”</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</code></pre></div>
+
+<p>“变量、对象、方法、数据结构。”</p>
+<p>林默点头。</p>
+<p>教授打开 Python，在屏幕上敲下：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+
+<p>屏幕上出现：</p>
+<div class="codehilite"><pre><span></span><code>tensor([1, 2, 3])
+</code></pre></div>
+
+<p>“欢迎来到 PyTorch 世界。”</p>
+<p>“这里最基础的东西，不是 <code>int</code>，不是 <code>double</code>。”</p>
+<p>教授指着那个单词。</p>
+<blockquote>
+<p><strong>Tensor。</strong></p>
+</blockquote>
+<hr />
+<h2 id="tensor">一、Tensor 到底是什么？</h2>
+<p>林默皱眉。</p>
+<p>“Tensor……张量？我每次看到这个词就觉得像数学论文。”</p>
+<p>教授笑了。</p>
+<p>“先忘掉‘张量’这个翻译。”</p>
+<p>他在白板上写：</p>
+<div class="codehilite"><pre><span></span><code>一个数字
+5
+</code></pre></div>
+
+<p>“这是几维？”</p>
+<p>“0维？”</p>
+<p>“对。”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+
+<p>这是一个 <strong>0 维 Tensor</strong>。</p>
+<p>接着教授写：</p>
+<div class="codehilite"><pre><span></span><code>[1, 2, 3]
+</code></pre></div>
+
+<p>“这个呢？”</p>
+<p>“一维数组。”</p>
+<p>“在 PyTorch 里，就是 <strong>1 维 Tensor</strong>。”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>[
+  [1, 2, 3],
+  [4, 5, 6]
+]
+</code></pre></div>
+
+<p>林默马上回答：</p>
+<p>“二维数组。”</p>
+<p>“也就是二维 Tensor。”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<p>教授继续画：</p>
+<div class="codehilite"><pre><span></span><code>数字              0维 Tensor
+数组              1维 Tensor
+矩阵              2维 Tensor
+一堆矩阵          3维 Tensor
+一堆3维数据       4维 Tensor
+...
+</code></pre></div>
+
+<p>林默突然明白了。</p>
+<p>“所以 Tensor 可以粗略理解成——<strong>N 维数组？</strong>”</p>
+<p>“对。”</p>
+<p>“那不就是 NumPy 的 <code>ndarray</code>？”</p>
+<p>教授停顿了一下。</p>
+<p>“很好。”</p>
+<p>“这就是第一个关键问题。”</p>
+<hr />
+<h2 id="pytorch-numpy">二、那 PyTorch 和 NumPy 有什么区别？</h2>
+<p>教授写下：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+
+<p>看起来确实差不多。</p>
+<p>加法也差不多：</p>
+<div class="codehilite"><pre><span></span><code>a + a
+</code></pre></div>
+
+<p>和：</p>
+<div class="codehilite"><pre><span></span><code>b + b
+</code></pre></div>
+
+<p>都得到：</p>
+<div class="codehilite"><pre><span></span><code>[2, 4, 6]
+</code></pre></div>
+
+<p>“那 PyTorch 凭什么专门搞个 Tensor？”</p>
+<p>教授没有回答。</p>
+<p>而是敲下：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+    <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">],</span>
+    <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>林默注意到了一个陌生参数：</p>
+<div class="codehilite"><pre><span></span><code>requires_grad=True
+</code></pre></div>
+
+<p>“这是干什么？”</p>
+<p>教授只说了一句话。</p>
+<p>“让这块石头——”</p>
+<p>“<strong>拥有记忆。</strong>”</p>
+<hr />
+<h2 id="_1">三、会记住自己经历过什么的数字</h2>
+<p>教授继续输入：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
+</code></pre></div>
+
+<p>数学上就是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+y=x^2
+</annotation></semantics></math></span></p>
+<p>如果：</p>
+<div class="codehilite"><pre><span></span><code>x = 2
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>y = 4
+</code></pre></div>
+
+<p>这没什么神奇。</p>
+<p>教授继续：</p>
+<div class="codehilite"><pre><span></span><code>y.backward()
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="p">)</span>
+</code></pre></div>
+
+<p>输出：</p>
+<div class="codehilite"><pre><span></span><code>tensor(4.)
+</code></pre></div>
+
+<p>林默愣住了。</p>
+<p>“4？”</p>
+<p>“为什么是4？”</p>
+<p>教授在白板上写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+y=x^2
+</annotation></semantics></math></span></p>
+<p>求导：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mo>=</mo><mn>2</mn><mi>x</mi></mrow><annotation encoding="application/x-tex">
+\frac{dy}{dx}=2x
+</annotation></semantics></math></span></p>
+<p>因为：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">
+x=2
+</annotation></semantics></math></span></p>
+<p>所以：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mo>=</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">
+\frac{dy}{dx}=4
+</annotation></semantics></math></span></p>
+<p>林默看着：</p>
+<div class="codehilite"><pre><span></span><code>x.grad
+</code></pre></div>
+
+<p>又看了看白板。</p>
+<p>“等等。”</p>
+<p>“你是说……”</p>
+<p>“<strong>PyTorch 自动把导数算出来了？</strong>”</p>
+<p>“对。”</p>
+<hr />
+<h2 id="tensor_1">四、真正重要的不是 Tensor，而是它背后的世界</h2>
+<p>教授重新写了一段：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">4</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">b</span> <span class="o">*</span> <span class="n">b</span>
+</code></pre></div>
+
+<p>如果只看代码：</p>
+<div class="codehilite"><pre><span></span><code>x
+↓
+x * 3
+↓
++ 4
+↓
+平方
+↓
+y
+</code></pre></div>
+
+<p>实际上，PyTorch 在背后悄悄建立了一张图：</p>
+<div class="codehilite"><pre><span></span><code>        x
+        │
+       ×3
+        │
+        a
+        │
+       +4
+        │
+        b
+       / \
+      b   b
+       \ /
+        ×
+        │
+        y
+</code></pre></div>
+
+<p>这就是：</p>
+<blockquote>
+<p><strong>Computational Graph——计算图。</strong></p>
+</blockquote>
+<p>林默盯着图。</p>
+<p>“所以我每进行一次运算……”</p>
+<p>“PyTorch 都可能记录下来？”</p>
+<p>“准确地说，当相关 Tensor 需要梯度时，PyTorch 会跟踪这些运算。”</p>
+<p>教授指着：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span>
+</code></pre></div>
+
+<p>“这句话相当于告诉 PyTorch：”</p>
+<blockquote>
+<p>这个变量以后我要对它求导，你把相关计算过程记下来。</p>
+</blockquote>
+<hr />
+<h2 id="_2">五、为什么神经网络非得求导？</h2>
+<p>林默问出了最重要的问题。</p>
+<p>“但是训练神经网络为什么一定要求导？”</p>
+<p>教授没有回答，而是给了他一道小学题。</p>
+<p>“假设我要找到一个数字 <code>w</code>，让它满足：”</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>2</mn><mi>w</mi><mo>≈</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">
+2w \approx 10
+</annotation></semantics></math></span></p>
+<p>“答案是多少？”</p>
+<p>“5。”</p>
+<p>“但是假设机器不知道。”</p>
+<p>初始：</p>
+<div class="codehilite"><pre><span></span><code>w = 1
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>2 × 1 = 2
+</code></pre></div>
+
+<p>距离目标 10 很远。</p>
+<p>于是定义一个“错误程度”：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi><mo>=</mo><mo stretchy="false">(</mo><mn>2</mn><mi>w</mi><mo>−</mo><mn>10</mn><msup><mo stretchy="false">)</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">
+Loss=(2w-10)^2
+</annotation></semantics></math></span></p>
+<p>当：</p>
+<div class="codehilite"><pre><span></span><code>w = 1
+</code></pre></div>
+
+<p>时：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi><mo>=</mo><mo stretchy="false">(</mo><mn>2</mn><mo>−</mo><mn>10</mn><msup><mo stretchy="false">)</mo><mn>2</mn></msup><mo>=</mo><mn>64</mn></mrow><annotation encoding="application/x-tex">
+Loss=(2-10)^2=64
+</annotation></semantics></math></span></p>
+<p>现在机器需要解决一个问题：</p>
+<blockquote>
+<p><strong>w 应该往哪个方向调整，才能让 Loss 变小？</strong></p>
+</blockquote>
+<p>林默沉默几秒。</p>
+<p>“看 Loss 对 w 的导数？”</p>
+<p>教授点头。</p>
+<hr />
+<h2 id="_3">六、梯度其实就是“往哪边走”</h2>
+<p>教授画了一座山谷：</p>
+<div class="codehilite"><pre><span></span><code>Loss
+ ^
+ |       *
+ |      / \
+ |     /   \
+ |    /     \
+ |   /       \
+ |__/_________\____&gt; w
+          ↓
+       最低点
+</code></pre></div>
+
+<p>神经网络训练，本质上是在找：</p>
+<blockquote>
+<p><strong>Loss 最低的位置。</strong></p>
+</blockquote>
+<p>而梯度告诉你：</p>
+<div class="codehilite"><pre><span></span><code>当前位置的坡度
+</code></pre></div>
+
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>gradient &gt; 0
+</code></pre></div>
+
+<p>说明往右走，Loss 变大。</p>
+<p>所以应该：</p>
+<div class="codehilite"><pre><span></span><code>往左走
+</code></pre></div>
+
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>w = w - learning_rate * gradient
+</code></pre></div>
+
+<p>林默突然盯住了这个公式。</p>
+<p>“等等……”</p>
+<div class="codehilite"><pre><span></span><code>新参数
+=
+旧参数
+-
+学习率 × 梯度
+</code></pre></div>
+
+<p>教授点头。</p>
+<p>“这就是你以后天天见到的——”</p>
+<blockquote>
+<p><strong>梯度下降。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_4">七、第一次真正的“训练”</h2>
+<p>教授打开编辑器。</p>
+<p>“现在不用任何神经网络 API。”</p>
+<p>“我们手搓一次训练。”</p>
+<p>目标：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>2</mn><mi>x</mi></mrow><annotation encoding="application/x-tex">
+y=2x
+</annotation></semantics></math></span></p>
+<p>训练数据只有一个：</p>
+<div class="codehilite"><pre><span></span><code>x = 5
+y = 10
+</code></pre></div>
+
+<p>代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">x</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">w</span> <span class="o">-=</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">w</span><span class="o">.</span><span class="n">grad</span>
+
+    <span class="n">w</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+</code></pre></div>
+
+<p>林默看着这段代码。</p>
+<p>只有十几行。</p>
+<p>但教授告诉他：</p>
+<p>“你已经写出了一个极简版机器学习训练系统。”</p>
+<hr />
+<h2 id="_5">八、逐行拆开</h2>
+<p>第一句：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">w</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>w</code> 是我们想学习的参数。</p>
+<p>初始：</p>
+<div class="codehilite"><pre><span></span><code>w = 1
+</code></pre></div>
+
+<p>但正确答案应该接近：</p>
+<div class="codehilite"><pre><span></span><code>w = 2
+</code></pre></div>
+
+<hr />
+<p>第二步：</p>
+<div class="codehilite"><pre><span></span><code>y = w * x
+</code></pre></div>
+
+<p>这叫：</p>
+<blockquote>
+<p><strong>Forward / 前向传播</strong></p>
+</blockquote>
+<p>拿当前参数计算预测结果。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>w = 1
+x = 5
+
+y = 5
+</code></pre></div>
+
+<p>但是正确答案：</p>
+<div class="codehilite"><pre><span></span><code>target = 10
+</code></pre></div>
+
+<hr />
+<p>第三步：</p>
+<div class="codehilite"><pre><span></span><code>loss = (y - target) ** 2
+</code></pre></div>
+
+<p>计算：</p>
+<div class="codehilite"><pre><span></span><code>预测得有多烂
+</code></pre></div>
+
+<p>这就是：</p>
+<blockquote>
+<p><strong>Loss Function / 损失函数</strong></p>
+</blockquote>
+<p>预测：</p>
+<div class="codehilite"><pre><span></span><code>5
+</code></pre></div>
+
+<p>答案：</p>
+<div class="codehilite"><pre><span></span><code>10
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>loss = 25
+</code></pre></div>
+
+<hr />
+<p>第四步：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</code></pre></div>
+
+<p>这一句话极其重要。</p>
+<p>PyTorch 开始沿着计算图：</p>
+<div class="codehilite"><pre><span></span><code>Loss
+ ↑
+ y
+ ↑
+ w
+</code></pre></div>
+
+<p>反向计算：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>w</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+\frac{\partial Loss}{\partial w}
+</annotation></semantics></math></span></p>
+<p>这就是：</p>
+<blockquote>
+<p><strong>Backward / 反向传播。</strong></p>
+</blockquote>
+<hr />
+<p>第五步：</p>
+<div class="codehilite"><pre><span></span><code>w -= 0.01 * w.grad
+</code></pre></div>
+
+<p>根据梯度修改参数。</p>
+<p>其中：</p>
+<div class="codehilite"><pre><span></span><code>0.01
+</code></pre></div>
+
+<p>叫：</p>
+<blockquote>
+<p><strong>Learning Rate / 学习率。</strong></p>
+</blockquote>
+<hr />
+<p>第六步：</p>
+<div class="codehilite"><pre><span></span><code>w.grad.zero_()
+</code></pre></div>
+
+<p>林默突然问：</p>
+<p>“为什么要清零？”</p>
+<p>教授笑了。</p>
+<p>“这是 PyTorch 新手最容易踩的坑之一。”</p>
+<hr />
+<h2 id="_6">九、梯度默认会累加</h2>
+<p>假设第一次：</p>
+<div class="codehilite"><pre><span></span><code>w.grad = 3
+</code></pre></div>
+
+<p>第二次又算出：</p>
+<div class="codehilite"><pre><span></span><code>w.grad = 4
+</code></pre></div>
+
+<p>很多初学者以为最后：</p>
+<div class="codehilite"><pre><span></span><code>w.grad = 4
+</code></pre></div>
+
+<p>实际上 PyTorch 默认可能变成：</p>
+<div class="codehilite"><pre><span></span><code>w.grad = 7
+</code></pre></div>
+
+<p>因为：</p>
+<blockquote>
+<p><strong>PyTorch 的梯度默认累加。</strong></p>
+</blockquote>
+<p>所以每轮训练通常需要：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.zero_grad()
+</code></pre></div>
+
+<p>或者刚才手写版本里的：</p>
+<div class="codehilite"><pre><span></span><code>w.grad.zero_()
+</code></pre></div>
+
+<p>林默把这句话记在笔记里：</p>
+<blockquote>
+<p>backward 之前/每轮训练要注意清梯度，否则梯度会累积。</p>
+</blockquote>
+<hr />
+<h2 id="torchno_grad">十、为什么更新参数要 <code>torch.no_grad()</code>？</h2>
+<p>还有一段奇怪代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">w</span> <span class="o">-=</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">w</span><span class="o">.</span><span class="n">grad</span>
+</code></pre></div>
+
+<p>教授问：</p>
+<p>“我们修改 <code>w</code> 的这个操作，需要参与神经网络学习吗？”</p>
+<p>“不需要。”</p>
+<p>“那就没必要把它记录进计算图。”</p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="o">...</span>  <span class="c1"># 此处只展示结构，完整代码见上下文</span>
+</code></pre></div>
+
+<p>意思可以暂时理解成：</p>
+<blockquote>
+<p><strong>接下来这些计算不用追踪梯度。</strong></p>
+</blockquote>
+<p>这不仅减少额外记录，也避免对需要梯度的叶子 Tensor 做不合适的原地更新。</p>
+<hr />
+<h2 id="pytorch">十一、第一张 PyTorch 世界地图</h2>
+<p>教授终于在黑板上画出了整套流程：</p>
+<div class="codehilite"><pre><span></span><code>             数据
+              │
+              ▼
+        ┌───────────┐
+        │   Model   │
+        │   模型     │
+        └───────────┘
+              │
+              ▼
+          prediction
+            预测值
+              │
+              ▼
+        ┌───────────┐
+        │   Loss    │
+        │  损失函数   │
+        └───────────┘
+              │
+              ▼
+       loss.backward()
+              │
+              ▼
+           梯度 grad
+              │
+              ▼
+      optimizer.step()
+              │
+              ▼
+           更新参数
+              │
+              └─────────┐
+                        │
+                        ▼
+                    下一轮训练
+</code></pre></div>
+
+<p>然后他在旁边写下 PyTorch 最核心的一套训练模板：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>林默看着这五行。</p>
+<p>教授说：</p>
+<p>“以后你看到 CNN、RNN、Transformer，甚至很多大模型训练代码，外面套的骨架，本质上都逃不出这几个步骤。”</p>
+<div class="codehilite"><pre><span></span><code>1. 清梯度
+2. 前向传播
+3. 算 Loss
+4. 反向传播
+5. 更新参数
+</code></pre></div>
+
+<p>“真正变化的，只是里面的模型越来越复杂。”</p>
+<hr />
+<h2 id="pytorch_1">十二、林默第一次理解了 PyTorch</h2>
+<p>凌晨三点。</p>
+<p>他重新看向：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+</code></pre></div>
+
+<p>这一次，它不再只是一个陌生的 Python 库。</p>
+<p>他脑海里已经出现了一套完整的世界：</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+   │
+   ├── 保存数据
+   │
+   └── 参与运算
+          │
+          ▼
+       计算图
+          │
+          ▼
+        Loss
+          │
+          ▼
+      backward()
+          │
+          ▼
+       gradient
+          │
+          ▼
+     更新 parameter
+          │
+          ▼
+       Loss下降
+</code></pre></div>
+
+<p>而所谓：</p>
+<blockquote>
+<p><strong>训练神经网络</strong></p>
+</blockquote>
+<p>第一次变成了一句非常朴素的话：</p>
+<blockquote>
+<p><strong>让模型算一次 → 看错多少 → 算出参数该往哪改 → 改一点 → 再来一次。</strong></p>
+</blockquote>
+<p>教授收起电脑。</p>
+<p>“今天先到这里。”</p>
+<p>林默问：</p>
+<p>“下一章是什么？”</p>
+<p>教授停在门口。</p>
+<p>“你现在只有一块会自动求导的石头。”</p>
+<p>“下一章，我们把成千上万个参数组织起来。”</p>
+<p>他在黑板上留下三个词：</p>
+<div class="codehilite"><pre><span></span><code>nn.Module
+
+Linear
+
+Parameter
+</code></pre></div>
+
+<p><strong>下一章：《神经网络诞生——nn.Module、Linear 与 Parameter》</strong>。</p>
+<p>这一章会真正开始写第一个 PyTorch 神经网络，并解释一个很容易只会背、却不知道原理的问题：</p>
+<blockquote>
+<p><code>model.parameters()</code> 里面到底装了什么？为什么 <code>optimizer</code> 能知道应该更新哪些东西？</p>
+</blockquote></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="index.html">← 全书目录<span>回到旅程起点</span></a><a href="chapter-02.html">下一章 →<span>神经网络诞生</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

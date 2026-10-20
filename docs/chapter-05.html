@@ -1,0 +1,1416 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>粮草与运输队 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="5"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="current" href="chapter-05.html" aria-current=page><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#sample">一、首先认识 Sample</a></li>
+<li><a href="#dataset">二、Dataset 本质上解决两个问题</a></li>
+<li><a href="#dataset_1">三、把 Dataset 想成一个仓库</a></li>
+<li><a href="#_1">四、但是一条一条训练不行吗？</a></li>
+<li><a href="#batch_1">五、Batch：一车一车运</a></li>
+<li><a href="#dataloader">六、DataLoader 登场</a></li>
+<li><a href="#100">七、为什么不把 100 万条一次全塞进去？</a></li>
+<li><a href="#batch_2">八、Batch 还有第二个作用</a></li>
+<li><a href="#_2">九、如果看一批样本呢？</a></li>
+<li><a href="#iteration">十、Iteration 出现了</a></li>
+<li><a href="#epoch">十一、Epoch 到底是什么？</a></li>
+<li><a href="#for">十二、终于看懂双层 for 循环</a></li>
+<li><a href="#_3">十三、但这里有一个问题</a></li>
+<li><a href="#shuffle">十四、Shuffle：洗牌</a></li>
+<li><a href="#shuffle_1">十五、测试集也 Shuffle 吗？</a></li>
+<li><a href="#drop_last">十六、为什么还需要 drop_last？</a></li>
+<li><a href="#dataloader_1">十七、DataLoader 还有一个真正工程化的作用</a></li>
+<li><a href="#dataset_2">十八、现在自己造一个 Dataset</a></li>
+<li><a href="#dataloader_2">十九、看一眼 DataLoader 吐出来什么</a></li>
+<li><a href="#_4">二十、第一次完整训练</a></li>
+<li><a href="#_5">二十一、整条流水线</a></li>
+<li><a href="#samplebatchiterationepoch">二十二、Sample、Batch、Iteration、Epoch 终于不乱了</a></li>
+<li><a href="#_6">二十三、但林默发现了一个新的问题</a></li>
+<li><a href="#cpu-gpu">二十四、CPU 和 GPU 是两个世界</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 05 <span>/ 10 · 约 33 分钟</span></p><h1>粮草与运输队</h1><p class="topics">Dataset · DataLoader · Batch · Epoch</p><div class="bridge">训练逻辑已经完整，现在让成千上万条数据有序进入模型。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="current" href="chapter-05.html" aria-current=page><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#sample">一、首先认识 Sample</a></li>
+<li><a href="#dataset">二、Dataset 本质上解决两个问题</a></li>
+<li><a href="#dataset_1">三、把 Dataset 想成一个仓库</a></li>
+<li><a href="#_1">四、但是一条一条训练不行吗？</a></li>
+<li><a href="#batch_1">五、Batch：一车一车运</a></li>
+<li><a href="#dataloader">六、DataLoader 登场</a></li>
+<li><a href="#100">七、为什么不把 100 万条一次全塞进去？</a></li>
+<li><a href="#batch_2">八、Batch 还有第二个作用</a></li>
+<li><a href="#_2">九、如果看一批样本呢？</a></li>
+<li><a href="#iteration">十、Iteration 出现了</a></li>
+<li><a href="#epoch">十一、Epoch 到底是什么？</a></li>
+<li><a href="#for">十二、终于看懂双层 for 循环</a></li>
+<li><a href="#_3">十三、但这里有一个问题</a></li>
+<li><a href="#shuffle">十四、Shuffle：洗牌</a></li>
+<li><a href="#shuffle_1">十五、测试集也 Shuffle 吗？</a></li>
+<li><a href="#drop_last">十六、为什么还需要 drop_last？</a></li>
+<li><a href="#dataloader_1">十七、DataLoader 还有一个真正工程化的作用</a></li>
+<li><a href="#dataset_2">十八、现在自己造一个 Dataset</a></li>
+<li><a href="#dataloader_2">十九、看一眼 DataLoader 吐出来什么</a></li>
+<li><a href="#_4">二十、第一次完整训练</a></li>
+<li><a href="#_5">二十一、整条流水线</a></li>
+<li><a href="#samplebatchiterationepoch">二十二、Sample、Batch、Iteration、Epoch 终于不乱了</a></li>
+<li><a href="#_6">二十三、但林默发现了一个新的问题</a></li>
+<li><a href="#cpu-gpu">二十四、CPU 和 GPU 是两个世界</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：文中的样本数与批次数换算针对常见的 map-style Dataset。Windows 上把 num_workers 设为大于 0 时，请将创建 DataLoader 和训练的入口放在 if <strong>name</strong> == "<strong>main</strong>": 中；初学时可以先用 num_workers=0。</p>
+</blockquote>
+<p>第五天。</p>
+<p>林默走进实验室的时候，陈教授没有打开 PyTorch。</p>
+<p>桌子上反而放着一张纸。</p>
+<p>上面写着：</p>
+<div class="codehilite"><pre><span></span><code>训练集：1,000,000 条数据
+</code></pre></div>
+
+<p>教授问：</p>
+<p>“昨天我们的训练代码是什么？”</p>
+<p>林默已经很熟了：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>“很好。”</p>
+<p>教授指着那一百万条数据。</p>
+<p>“现在把它们训练起来。”</p>
+<p>林默沉默了。</p>
+<p>“一百万条……全部放进 <code>x</code>？”</p>
+<p>教授笑了。</p>
+<p>“欢迎来到真正的训练世界。”</p>
+<hr />
+<h2 id="sample">一、首先认识 Sample</h2>
+<p>假设我们做一个非常简单的任务：</p>
+<blockquote>
+<p>根据学习时间和刷题数量，预测考试是否通过。</p>
+</blockquote>
+<p>一条数据：</p>
+<div class="codehilite"><pre><span></span><code>学习时间：5小时
+刷题数量：100
+结果：通过
+</code></pre></div>
+
+<p>可以写成：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">])</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>这就是一个：</p>
+<blockquote>
+<p><strong>Sample——样本</strong></p>
+</blockquote>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>一个 Sample
+
+x = 特征
+y = 标签
+</code></pre></div>
+
+<p>如果有 10000 个学生：</p>
+<div class="codehilite"><pre><span></span><code>Sample 1
+Sample 2
+Sample 3
+...
+Sample 10000
+</code></pre></div>
+
+<p>这些样本集合起来，就是：</p>
+<blockquote>
+<p><strong>Dataset——数据集。</strong></p>
+</blockquote>
+<hr />
+<h2 id="dataset">二、Dataset 本质上解决两个问题</h2>
+<p>教授打开 PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
+</code></pre></div>
+
+<p>然后写：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">StudentDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</code></pre></div>
+
+<p>林默第一反应：</p>
+<p>“怎么又继承？”</p>
+<p>教授说：</p>
+<p>“别被代码吓到。”</p>
+<p>一个 Dataset 最核心就是回答两个问题：</p>
+<div class="codehilite"><pre><span></span><code>问题一：
+
+你有多少条数据？
+
+        ↓
+
+__len__()
+</code></pre></div>
+
+<p>以及：</p>
+<div class="codehilite"><pre><span></span><code>问题二：
+
+给你编号 i，
+第 i 条数据是什么？
+
+        ↓
+
+__getitem__(i)
+</code></pre></div>
+
+<p>就这么简单。</p>
+<hr />
+<h2 id="dataset_1">三、把 Dataset 想成一个仓库</h2>
+<p>教授画：</p>
+<div class="codehilite"><pre><span></span><code>StudentDataset
+
+┌─────────────────────────┐
+│ 0 → (x0, y0)            │
+│ 1 → (x1, y1)            │
+│ 2 → (x2, y2)            │
+│ 3 → (x3, y3)            │
+│ ...                     │
+│ 9999 → (x9999, y9999)   │
+└─────────────────────────┘
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>len(dataset)
+</code></pre></div>
+
+<p>就是：</p>
+<div class="codehilite"><pre><span></span><code>仓库里有多少件货物？
+</code></pre></div>
+
+<p>而：</p>
+<div class="codehilite"><pre><span></span><code>dataset[5]
+</code></pre></div>
+
+<p>就是：</p>
+<div class="codehilite"><pre><span></span><code>把第 5 件货拿出来。
+</code></pre></div>
+
+<p>林默点头。</p>
+<p>“那 Dataset 只是负责存取数据？”</p>
+<p>“可以先这么理解。”</p>
+<p>它不负责训练。</p>
+<p>也不负责：</p>
+<div class="codehilite"><pre><span></span><code>backward
+optimizer
+Loss
+</code></pre></div>
+
+<p>它主要负责：</p>
+<blockquote>
+<p><strong>告诉 PyTorch 数据在哪里，以及怎样拿到某个样本。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_1">四、但是一条一条训练不行吗？</h2>
+<p>林默问：</p>
+<p>“那我直接这样？”</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>“理论上可以。”</p>
+<p>“但通常不是最佳选择。”</p>
+<p>教授在黑板上写：</p>
+<div class="codehilite"><pre><span></span><code>一次只训练 1 条数据
+</code></pre></div>
+
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>100 万条数据
+</code></pre></div>
+
+<p>那一次完整遍历就要进行：</p>
+<div class="codehilite"><pre><span></span><code>100 万次参数更新
+</code></pre></div>
+
+<p>更重要的是 GPU 很擅长：</p>
+<blockquote>
+<p><strong>并行矩阵计算。</strong></p>
+</blockquote>
+<p>你却每次只扔进去一个样本：</p>
+<div class="codehilite"><pre><span></span><code>GPU：
+
+████████████████████
+
+你：
+
+■
+</code></pre></div>
+
+<p>大量计算能力可能利用不起来。</p>
+<p>林默明白了。</p>
+<p>“所以一次多喂一点？”</p>
+<p>“对。”</p>
+<p>于是第二个核心概念出现了：</p>
+<h3 id="batch">Batch</h3>
+<hr />
+<h2 id="batch_1">五、Batch：一车一车运</h2>
+<p>假设有：</p>
+<div class="codehilite"><pre><span></span><code>1000 条数据
+</code></pre></div>
+
+<p>我们规定：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 100
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>Batch 1：
+样本 1 ~ 100
+
+Batch 2：
+样本 101 ~ 200
+
+Batch 3：
+样本 201 ~ 300
+
+...
+
+Batch 10：
+样本 901 ~ 1000
+</code></pre></div>
+
+<p>每一批：</p>
+<blockquote>
+<p><strong>100 个 Sample。</strong></p>
+</blockquote>
+<p>这就是一个：</p>
+<blockquote>
+<p><strong>Batch——批次。</strong></p>
+</blockquote>
+<p>教授画了一座仓库：</p>
+<div class="codehilite"><pre><span></span><code>                 Dataset
+              1000 个样本
+                   │
+                   ▼
+        ┌──────────────────┐
+        │    DataLoader    │
+        └──────────────────┘
+                   │
+        batch_size = 100
+                   │
+          ┌────────┼────────┐
+          ▼        ▼        ▼
+       Batch1   Batch2   Batch3 ...
+        100      100      100
+</code></pre></div>
+
+<hr />
+<h2 id="dataloader">六、DataLoader 登场</h2>
+<p>PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>现在：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div>
+
+<p>每次拿到的不再是一条数据。</p>
+<p>而是一批。</p>
+<p>假设每个学生有：</p>
+<div class="codehilite"><pre><span></span><code>2 个特征
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>x.shape
+=
+[100, 2]
+</code></pre></div>
+
+<p>因为：</p>
+<div class="codehilite"><pre><span></span><code>100 个学生
+×
+每个学生 2 个特征
+</code></pre></div>
+
+<p>标签：</p>
+<div class="codehilite"><pre><span></span><code>y.shape
+=
+[100]
+</code></pre></div>
+
+<p>林默突然发现：</p>
+<p>“这和上一章的 CrossEntropy 对上了。”</p>
+<p>教授点头。</p>
+<p>上一章我们说：</p>
+<div class="codehilite"><pre><span></span><code>logits.shape
+
+[batch_size, num_classes]
+</code></pre></div>
+
+<p>现在来源清楚了。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 100
+num_classes = 3
+</code></pre></div>
+
+<p>模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>x
+[100, 2]
+
+    ↓ model
+
+logits
+[100, 3]
+</code></pre></div>
+
+<p>target：</p>
+<div class="codehilite"><pre><span></span><code>[100]
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>loss = loss_fn(logits, y)
+</code></pre></div>
+
+<p>一次计算这一批 100 个样本的 Loss。</p>
+<hr />
+<h2 id="100">七、为什么不把 100 万条一次全塞进去？</h2>
+<p>林默马上反问：</p>
+<p>“既然一次越多 GPU 利用率越高——”</p>
+<p>“那我直接：”</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 1,000,000
+</code></pre></div>
+
+<p>“不就行了？”</p>
+<p>教授指了指电脑。</p>
+<p>“你有多少显存？”</p>
+<p>林默：“……”</p>
+<p>这是第一个问题：</p>
+<blockquote>
+<p><strong>显存有限。</strong></p>
+</blockquote>
+<p>模型训练过程中，GPU 不只是保存输入。</p>
+<p>还需要保存：</p>
+<div class="codehilite"><pre><span></span><code>模型参数
+梯度
+Optimizer 状态
+中间激活值
+输入数据
+其他临时计算结果
+</code></pre></div>
+
+<p>所以 batch 越大：</p>
+<div class="codehilite"><pre><span></span><code>一次进入模型的数据越多
+        ↓
+中间结果通常越多
+        ↓
+显存占用增加
+</code></pre></div>
+
+<p>最后：</p>
+<div class="codehilite"><pre><span></span><code>CUDA out of memory
+</code></pre></div>
+
+<p>也就是以后经常见到的：</p>
+<blockquote>
+<p><strong>OOM。</strong></p>
+</blockquote>
+<hr />
+<h2 id="batch_2">八、Batch 还有第二个作用</h2>
+<p>教授突然写了两个极端。</p>
+<p>第一种：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 1
+</code></pre></div>
+
+<p>第二种：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 整个训练集
+</code></pre></div>
+
+<p>假设真实世界的 Loss 地形：</p>
+<div class="codehilite"><pre><span></span><code>Loss
+│
+│       /\        /\
+│      /  \______/  \
+│  ___/              \___
+│_/                       \_
+└──────────────────────────── 参数
+</code></pre></div>
+
+<p>如果每次只看一个样本：</p>
+<div class="codehilite"><pre><span></span><code>这个样本说：
+往左！
+
+下一个样本说：
+往右！
+
+再下一个：
+往左上！
+</code></pre></div>
+
+<p>梯度会比较：</p>
+<blockquote>
+<p><strong>嘈杂。</strong></p>
+</blockquote>
+<p>参数更新路线可能：</p>
+<div class="codehilite"><pre><span></span><code>↘
+  ↙
+    ↘
+      ↓
+    ↙
+      ↘
+        ↓
+</code></pre></div>
+
+<hr />
+<h2 id="_2">九、如果看一批样本呢？</h2>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 128
+</code></pre></div>
+
+<p>128 个样本共同贡献一个 batch 的 Loss。</p>
+<p>你得到的梯度更像：</p>
+<div class="codehilite"><pre><span></span><code>128 个样本综合之后：
+
+“整体来说，往这个方向比较好。”
+</code></pre></div>
+
+<p>所以更新相对稳定。</p>
+<p>但又不像整个训练集那样，每更新一次都要计算全部数据。</p>
+<p>这形成了一个折中：</p>
+<div class="codehilite"><pre><span></span><code>单样本
+│
+│ 梯度噪声大
+│ 更新频繁
+│
+▼
+
+Mini-Batch
+│
+│ 效率与稳定性的折中
+│ GPU 友好
+│
+▼
+
+整个 Dataset
+│
+│ 梯度更稳定
+│ 单次计算昂贵
+│ 内存压力大
+</code></pre></div>
+
+<p>现代深度学习最常见的是：</p>
+<blockquote>
+<p><strong>Mini-Batch Gradient Descent。</strong></p>
+</blockquote>
+<p>平常大家直接说 Batch，很多时候其实指的就是 mini-batch。</p>
+<hr />
+<h2 id="iteration">十、Iteration 出现了</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>每执行一次：</p>
+<div class="codehilite"><pre><span></span><code>取一个 Batch
+      ↓
+forward
+      ↓
+loss
+      ↓
+backward
+      ↓
+step
+</code></pre></div>
+
+<p>就完成一次：</p>
+<blockquote>
+<p><strong>Iteration——迭代。</strong></p>
+</blockquote>
+<p>也就是说：</p>
+<div class="codehilite"><pre><span></span><code>1 Iteration
+=
+训练 1 个 Batch
++
+通常更新 1 次参数
+</code></pre></div>
+
+<p>林默在纸上写：</p>
+<div class="codehilite"><pre><span></span><code>10000 个样本
+
+batch_size = 100
+
+那么：
+
+10000 / 100 = 100
+</code></pre></div>
+
+<p>“所以遍历完整个数据集，需要 100 个 iteration？”</p>
+<p>“对。”</p>
+<p>更准确地说，如果不能整除，还要处理最后一个不足 batch 的批次；默认情况下 DataLoader 可以保留它。</p>
+<hr />
+<h2 id="epoch">十一、Epoch 到底是什么？</h2>
+<p>教授终于写下这个天天出现的词：</p>
+<h3 id="epoch_1">Epoch</h3>
+<p>定义很简单：</p>
+<blockquote>
+<p><strong>整个训练集被完整遍历一遍，叫一个 Epoch。</strong></p>
+</blockquote>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>Dataset：
+
+1000 个样本
+</code></pre></div>
+
+<p>设置：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 100
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>1 Epoch
+│
+├── Batch 1 → Iteration 1
+├── Batch 2 → Iteration 2
+├── Batch 3 → Iteration 3
+├── ...
+└── Batch 10 → Iteration 10
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>1 Epoch
+=
+10 Iterations
+</code></pre></div>
+
+<p>如果训练：</p>
+<div class="codehilite"><pre><span></span><code>20 Epoch
+</code></pre></div>
+
+<p>意味着大体上：</p>
+<blockquote>
+<p>每条训练数据会被模型看到 20 次。</p>
+</blockquote>
+<p>总 iteration：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>20</mn><mo>×</mo><mn>10</mn><mo>=</mo><mn>200</mn></mrow><annotation encoding="application/x-tex">
+20\times10=200
+</annotation></semantics></math></span></p>
+<hr />
+<h2 id="for">十二、终于看懂双层 for 循环</h2>
+<p>教授写出了真正经典的训练代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>林默以前看这种代码，只知道：</p>
+<div class="codehilite"><pre><span></span><code>两个 for
+</code></pre></div>
+
+<p>现在完全不同了。</p>
+<p>外层：</p>
+<div class="codehilite"><pre><span></span><code>for epoch in range(10):
+    ...  # 此处只展示结构，完整代码见上下文
+</code></pre></div>
+
+<p>意思：</p>
+<blockquote>
+<p><strong>整个训练集看 10 遍。</strong></p>
+</blockquote>
+<p>内层：</p>
+<div class="codehilite"><pre><span></span><code>for x, y in dataloader:
+    ...  # 此处只展示结构，完整代码见上下文
+</code></pre></div>
+
+<p>意思：</p>
+<blockquote>
+<p><strong>这一遍里面，一批一批拿数据。</strong></p>
+</blockquote>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Epoch 1
+│
+├─ Batch 1 → 更新参数
+├─ Batch 2 → 更新参数
+├─ Batch 3 → 更新参数
+└─ ...
+
+Epoch 2
+│
+├─ Batch 1 → 更新参数
+├─ Batch 2 → 更新参数
+└─ ...
+
+...
+
+Epoch 10
+</code></pre></div>
+
+<hr />
+<h2 id="_3">十三、但这里有一个问题</h2>
+<p>教授拿出十张卡片：</p>
+<div class="codehilite"><pre><span></span><code>1 2 3 4 5 6 7 8 9 10
+</code></pre></div>
+
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>batch_size = 2
+</code></pre></div>
+
+<p>第一次：</p>
+<div class="codehilite"><pre><span></span><code>[1,2]
+[3,4]
+[5,6]
+[7,8]
+[9,10]
+</code></pre></div>
+
+<p>第二个 Epoch：</p>
+<div class="codehilite"><pre><span></span><code>[1,2]
+[3,4]
+[5,6]
+[7,8]
+[9,10]
+</code></pre></div>
+
+<p>第三个 Epoch：</p>
+<div class="codehilite"><pre><span></span><code>[1,2]
+[3,4]
+...
+</code></pre></div>
+
+<p>永远一样。</p>
+<p>教授问：</p>
+<p>“有没有必要每一轮都让模型按照完全相同的顺序看数据？”</p>
+<p>林默想了一下。</p>
+<p>“可以打乱？”</p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="shuffle">十四、Shuffle：洗牌</h2>
+<p><code>shuffle=True</code> 可以理解为：</p>
+<blockquote>
+<p><strong>每轮重新洗牌。</strong></p>
+</blockquote>
+<p>例如：</p>
+<p>第一轮：</p>
+<div class="codehilite"><pre><span></span><code>3 8 1 7 4 2 10 5 9 6
+</code></pre></div>
+
+<p>分 batch：</p>
+<div class="codehilite"><pre><span></span><code>[3,8]
+[1,7]
+[4,2]
+[10,5]
+[9,6]
+</code></pre></div>
+
+<p>下一轮重新洗：</p>
+<div class="codehilite"><pre><span></span><code>9 2 6 1 8 5 3 10 4 7
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>[9,2]
+[6,1]
+[8,5]
+[3,10]
+[4,7]
+</code></pre></div>
+
+<p>这样每个 Batch 的样本组合不断变化。</p>
+<p>对于许多训练任务，这有助于减少固定数据顺序带来的问题。</p>
+<p>所以训练集常见：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">train_dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="shuffle_1">十五、测试集也 Shuffle 吗？</h2>
+<p>林默顺手写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">test_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">test_dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>教授看了一眼。</p>
+<p>“通常没必要。”</p>
+<p>因为测试/验证的时候：</p>
+<div class="codehilite"><pre><span></span><code>不训练
+不更新参数
+</code></pre></div>
+
+<p>只是：</p>
+<div class="codehilite"><pre><span></span><code>拿数据
+ ↓
+预测
+ ↓
+统计准确率 / Loss
+</code></pre></div>
+
+<p>所以通常：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">val_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">val_dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>当然，这不是说验证集“绝对禁止 shuffle”，而是通常没有训练集那种打乱顺序的需求。</p>
+<hr />
+<h2 id="drop_last">十六、为什么还需要 <code>drop_last</code>？</h2>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>数据量 = 1000
+batch_size = 128
+</code></pre></div>
+
+<p>算一下：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1000</mn><mo>=</mo><mn>128</mn><mo>×</mo><mn>7</mn><mo>+</mo><mn>104</mn></mrow><annotation encoding="application/x-tex">
+1000=128\times7+104
+</annotation></semantics></math></span></p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>Batch 1 → 128
+Batch 2 → 128
+...
+Batch 7 → 128
+Batch 8 → 104
+</code></pre></div>
+
+<p>最后一批不完整。</p>
+<p>默认可以正常保留。</p>
+<p>但某些场景下，我们希望每个 batch 都严格一样大，可以：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>那么最后：</p>
+<div class="codehilite"><pre><span></span><code>104 条
+</code></pre></div>
+
+<p>这一批就被丢掉。</p>
+<p>林默点头。</p>
+<p>“所以 <code>drop_last=True</code> 不是固定必须开的。”</p>
+<p>“对。”</p>
+<blockquote>
+<p>是否需要丢最后一个不完整 batch，要看具体模型和训练需求。</p>
+</blockquote>
+<hr />
+<h2 id="dataloader_1">十七、DataLoader 还有一个真正工程化的作用</h2>
+<p>教授突然问：</p>
+<p>“GPU 训练速度非常快，但数据在哪？”</p>
+<p>“硬盘？”</p>
+<p>“对。”</p>
+<p>真实训练可能是：</p>
+<div class="codehilite"><pre><span></span><code>SSD
+ ↓
+读取图片
+ ↓
+解码
+ ↓
+预处理
+ ↓
+转 Tensor
+ ↓
+送入 GPU
+ ↓
+模型计算
+</code></pre></div>
+
+<p>假设 GPU 一批只需要：</p>
+<div class="codehilite"><pre><span></span><code>50ms
+</code></pre></div>
+
+<p>结果 CPU 读取和处理下一批需要：</p>
+<div class="codehilite"><pre><span></span><code>300ms
+</code></pre></div>
+
+<p>那 GPU 会变成：</p>
+<div class="codehilite"><pre><span></span><code>算完了。
+
+……
+
+数据呢？
+
+……
+
+还没来？
+
+……
+</code></pre></div>
+
+<p>昂贵的 GPU 在等 CPU。</p>
+<p>所以 DataLoader 还可以使用多个 worker：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>粗略理解：</p>
+<div class="codehilite"><pre><span></span><code>Worker 1 ─┐
+Worker 2 ─┤
+Worker 3 ─┼──► 准备 Batch ──► 训练
+Worker 4 ─┘
+</code></pre></div>
+
+<p>多个进程/worker 提前准备数据，尽量减少模型等数据的时间。</p>
+<p>不过 <code>num_workers</code> 并不是：</p>
+<blockquote>
+<p>越大越好。</p>
+</blockquote>
+<p>它受：</p>
+<div class="codehilite"><pre><span></span><code>CPU 核心
+内存
+磁盘速度
+操作系统
+数据预处理复杂度
+</code></pre></div>
+
+<p>等因素影响，需要实际测试。</p>
+<hr />
+<h2 id="dataset_2">十八、现在自己造一个 Dataset</h2>
+<p>教授说：</p>
+<p>“来，完整写一次。”</p>
+<p>任务：</p>
+<div class="codehilite"><pre><span></span><code>输入两个数
+预测 3 个类别
+</code></pre></div>
+
+<p>数据：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">DataLoader</span>
+
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span>
+    <span class="mi">0</span><span class="p">,</span>
+    <span class="mi">3</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">1000</span><span class="p">,)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>形状：</p>
+<div class="codehilite"><pre><span></span><code>x.shape
+→ [1000, 2]
+
+y.shape
+→ [1000]
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</code></pre></div>
+
+<p>创建：</p>
+<div class="codehilite"><pre><span></span><code>dataset = MyDataset(x, y)
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="dataloader_2">十九、看一眼 DataLoader 吐出来什么</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">batch_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">batch_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="k">break</span>
+</code></pre></div>
+
+<p>大概率得到：</p>
+<div class="codehilite"><pre><span></span><code>torch.Size([32, 2])
+
+torch.Size([32])
+</code></pre></div>
+
+<p>为什么？</p>
+<div class="codehilite"><pre><span></span><code>32
+↓
+batch_size
+
+2
+↓
+每个样本的特征数
+</code></pre></div>
+
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>batch_x
+[32, 2]
+</code></pre></div>
+
+<p>而每个样本只有一个类别编号：</p>
+<div class="codehilite"><pre><span></span><code>batch_y
+[32]
+</code></pre></div>
+
+<p>这时候模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>输入：</p>
+<div class="codehilite"><pre><span></span><code>[32, 2]
+</code></pre></div>
+
+<p>经过：</p>
+<div class="codehilite"><pre><span></span><code>Linear(2,16)
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[32,16]
+</code></pre></div>
+
+<p>再：</p>
+<div class="codehilite"><pre><span></span><code>ReLU
+</code></pre></div>
+
+<p>形状不变：</p>
+<div class="codehilite"><pre><span></span><code>[32,16]
+</code></pre></div>
+
+<p>最后：</p>
+<div class="codehilite"><pre><span></span><code>Linear(16,3)
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[32,3]
+</code></pre></div>
+
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>logits.shape = [32,3]
+target.shape = [32]
+</code></pre></div>
+
+<p>正好交给：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_4">二十、第一次完整训练</h2>
+<p>教授终于把前五章所有东西合并起来。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">DataLoader</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 1. 数据</span>
+<span class="c1"># =====================</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">1000</span><span class="p">,))</span>
+
+
+<span class="k">class</span> <span class="nc">MyDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">MyDataset</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 2. DataLoader</span>
+<span class="c1"># =====================</span>
+
+<span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 3. 模型</span>
+<span class="c1"># =====================</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">)</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 4. Loss</span>
+<span class="c1"># =====================</span>
+
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 5. Optimizer</span>
+<span class="c1"># =====================</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+    <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+<span class="p">)</span>
+
+
+<span class="c1"># =====================</span>
+<span class="c1"># 6. Train</span>
+<span class="c1"># =====================</span>
+
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+
+    <span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch_x</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span>
+            <span class="n">logits</span><span class="p">,</span>
+            <span class="n">batch_y</span>
+        <span class="p">)</span>
+
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;epoch:&quot;</span><span class="p">,</span>
+        <span class="n">epoch</span><span class="p">,</span>
+        <span class="s2">&quot;loss:&quot;</span><span class="p">,</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>林默盯着这段代码。</p>
+<p>第一次，他没有觉得这是“一堆 PyTorch API”。</p>
+<p>而是看到了一条完整的流水线。</p>
+<hr />
+<h2 id="_5">二十一、整条流水线</h2>
+<div class="codehilite"><pre><span></span><code>                Dataset
+          ┌─────────────────┐
+          │ Sample 1        │
+          │ Sample 2        │
+          │ Sample 3        │
+          │ ...             │
+          │ Sample 1000     │
+          └─────────────────┘
+                   │
+                   ▼
+               DataLoader
+                   │
+           batch_size = 32
+                   │
+                   ▼
+                 Batch
+             x: [32,2]
+             y: [32]
+                   │
+                   ▼
+                 Model
+                   │
+          Linear(2 → 16)
+                   │
+                 ReLU
+                   │
+          Linear(16 → 3)
+                   │
+                   ▼
+                logits
+                [32,3]
+                   │
+                   ▼
+           CrossEntropyLoss
+                   │
+                   ▼
+                  Loss
+                   │
+                   ▼
+               backward
+                   │
+                   ▼
+            Parameter.grad
+                   │
+                   ▼
+           optimizer.step
+                   │
+                   ▼
+              参数更新
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code>下一个 Batch
+     ↓
+再更新一次
+
+下一个 Batch
+     ↓
+再更新一次
+
+...
+
+所有 Batch 处理完成
+     ↓
+1 Epoch 完成
+     ↓
+重新开始下一个 Epoch
+</code></pre></div>
+
+<hr />
+<h2 id="samplebatchiterationepoch">二十二、Sample、Batch、Iteration、Epoch 终于不乱了</h2>
+<p>教授在黑板上写了一组数字：</p>
+<div class="codehilite"><pre><span></span><code>Dataset Size = 10,000
+
+Batch Size = 100
+
+Epoch = 20
+</code></pre></div>
+
+<p>问：</p>
+<p>“一个 Batch 有几个 Sample？”</p>
+<p>林默：</p>
+<p>“100。”</p>
+<p>“一个 Epoch 有多少 Batch？”</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>10000</mn><mi mathvariant="normal">/</mi><mn>100</mn><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">
+10000/100=100
+</annotation></semantics></math></span></p>
+<p>“100 个。”</p>
+<p>“一个 Epoch 大约多少 Iteration？”</p>
+<p>“100。”</p>
+<p>“训练 20 Epoch 呢？”</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>20</mn><mo>×</mo><mn>100</mn><mo>=</mo><mn>2000</mn></mrow><annotation encoding="application/x-tex">
+20\times100=2000
+</annotation></semantics></math></span></p>
+<p>“2000 次 Iteration，也就是通常进行了约 2000 次参数更新。”</p>
+<p>教授点头。</p>
+<p>于是：</p>
+<div class="codehilite"><pre><span></span><code>Sample
+↓
+一条数据
+
+
+Batch
+↓
+一批 Sample
+
+
+Iteration
+↓
+处理一个 Batch
+通常更新一次参数
+
+
+Epoch
+↓
+完整遍历一次 Dataset
+</code></pre></div>
+
+<p>这四个概念，彻底分开。</p>
+<hr />
+<h2 id="_6">二十三、但林默发现了一个新的问题</h2>
+<p>他盯着训练代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+
+    <span class="k">for</span> <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch_x</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">batch_y</span><span class="p">)</span>
+
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>突然问：</p>
+<p>“教授。”</p>
+<p>“这里所有东西都还在 CPU 上吧？”</p>
+<p>教授点头。</p>
+<p>林默指着电脑里的显卡。</p>
+<p>“那我买这张显卡干什么？”</p>
+<p>教授笑了。</p>
+<p>“终于想起来它了。”</p>
+<hr />
+<h2 id="cpu-gpu">二十四、CPU 和 GPU 是两个世界</h2>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+
+<p>默认通常：</p>
+<div class="codehilite"><pre><span></span><code>CPU
+</code></pre></div>
+
+<p>如果：</p>
+<div class="codehilite"><pre><span></span><code>x = x.cuda()
+</code></pre></div>
+
+<p>或者更通用地：</p>
+<div class="codehilite"><pre><span></span><code>x = x.to(&quot;cuda&quot;)
+</code></pre></div>
+
+<p>Tensor 就会进入：</p>
+<div class="codehilite"><pre><span></span><code>GPU
+</code></pre></div>
+
+<p>但这时候有一个极其经典的错误。</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>model → GPU
+
+x → CPU
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>会怎么样？</p>
+<p>林默想了想。</p>
+<p>“报错？”</p>
+<p>“对。”</p>
+<p>因为模型参数和输入数据在不同设备。</p>
+<p>你不能让：</p>
+<div class="codehilite"><pre><span></span><code>CPU 上的数据
+</code></pre></div>
+
+<p>直接和：</p>
+<div class="codehilite"><pre><span></span><code>GPU 上的权重
+</code></pre></div>
+
+<p>做同一次普通计算。</p>
+<p>于是实际训练代码开始变成：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+    <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="o">...</span>
+</code></pre></div>
+
+<p>林默看着 <code>device</code>。</p>
+<p>他意识到 PyTorch 世界的下一扇门已经打开。</p>
+<hr />
+<p>夜里十二点。</p>
+<p>陈教授在黑板上留下：</p>
+<div class="codehilite"><pre><span></span><code>CPU
+ │
+ │ .to(device)
+ ▼
+GPU
+
+Tensor
+Model
+Parameter
+Gradient
+</code></pre></div>
+
+<p>旁边还有几个林默经常见，却一直没真正理解的词：</p>
+<div class="codehilite"><pre><span></span><code>CUDA
+
+VRAM
+
+.to(device)
+
+no_grad()
+
+train()
+
+eval()
+</code></pre></div>
+
+<p>教授关上门前说：</p>
+<p>“下一章，我们终于让你的模型真正跑到 GPU 上。”</p>
+<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-04.html">← 上一章<span>审判模型的法官</span></a><a href="chapter-06.html">下一章 →<span>跨越两界</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>

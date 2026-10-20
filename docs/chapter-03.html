@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>让神经网络学会拐弯 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body data-chapter="3"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="current" href="chapter-03.html" aria-current=page><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#nnlinear">一、先回到 nn.Linear</a></li>
+<li><a href="#_1">二、那我堆两层呢？</a></li>
+<li><a href="#_2">三、那一百层呢？</a></li>
+<li><a href="#_3">四、神经网络需要一个“破坏者”</a></li>
+<li><a href="#relu">五、ReLU 是什么？</a></li>
+<li><a href="#linear-relu">六、Linear + ReLU 到底在干什么？</a></li>
+<li><a href="#relu_1">七、一个 ReLU 一个拐点，那很多呢？</a></li>
+<li><a href="#_4">八、一个非常重要的概念：隐藏层</a></li>
+<li><a href="#_5">九、“特征”开始出现了</a></li>
+<li><a href="#representation-learning">十、这就是 Representation Learning</a></li>
+<li><a href="#relu_2">十一、那为什么一定是 ReLU？</a></li>
+<li><a href="#sigmoid_1">十二、Sigmoid 的一个问题：梯度容易变小</a></li>
+<li><a href="#relu_3">十三、ReLU 为什么流行？</a></li>
+<li><a href="#_6">十四、神经网络训练，其实是在移动“折线”</a></li>
+<li><a href="#_7">十五、突然出现一道经典题</a></li>
+<li><a href="#nnsequential">十六、把网络写得更漂亮：nn.Sequential</a></li>
+<li><a href="#mlp">十七、这东西其实有名字：MLP</a></li>
+<li><a href="#_8">十八、今天真正应该记住什么？</a></li>
+<li><a href="#_9">十九、但林默发现了新的问题</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 03 <span>/ 10 · 约 22 分钟</span></p><h1>让神经网络学会拐弯</h1><p class="topics">激活函数 · ReLU · 非线性</p><div class="bridge">网络已经成形，但要学会复杂规律，还得拥有“拐弯”的能力。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="current" href="chapter-03.html" aria-current=page><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+<ul>
+<li><a href="#nnlinear">一、先回到 nn.Linear</a></li>
+<li><a href="#_1">二、那我堆两层呢？</a></li>
+<li><a href="#_2">三、那一百层呢？</a></li>
+<li><a href="#_3">四、神经网络需要一个“破坏者”</a></li>
+<li><a href="#relu">五、ReLU 是什么？</a></li>
+<li><a href="#linear-relu">六、Linear + ReLU 到底在干什么？</a></li>
+<li><a href="#relu_1">七、一个 ReLU 一个拐点，那很多呢？</a></li>
+<li><a href="#_4">八、一个非常重要的概念：隐藏层</a></li>
+<li><a href="#_5">九、“特征”开始出现了</a></li>
+<li><a href="#representation-learning">十、这就是 Representation Learning</a></li>
+<li><a href="#relu_2">十一、那为什么一定是 ReLU？</a></li>
+<li><a href="#sigmoid_1">十二、Sigmoid 的一个问题：梯度容易变小</a></li>
+<li><a href="#relu_3">十三、ReLU 为什么流行？</a></li>
+<li><a href="#_6">十四、神经网络训练，其实是在移动“折线”</a></li>
+<li><a href="#_7">十五、突然出现一道经典题</a></li>
+<li><a href="#nnsequential">十六、把网络写得更漂亮：nn.Sequential</a></li>
+<li><a href="#mlp">十七、这东西其实有名字：MLP</a></li>
+<li><a href="#_8">十八、今天真正应该记住什么？</a></li>
+<li><a href="#_9">十九、但林默发现了新的问题</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：带偏置的 Linear 严格说是仿射变换；多个仿射层不加非线性，仍可合并成一个仿射层。下面用“线性层”沿用深度学习中的常见叫法。</p>
+</blockquote>
+<p>第三天。</p>
+<p>林默刚走进实验室，就发现陈教授已经在黑板上画了一条直线。</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>2</mn><mi>x</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+y=2x+1
+</annotation></semantics></math></span></p>
+<p>“昨天你学了 <code>nn.Linear</code>。”</p>
+<p>教授说。</p>
+<p>“今天先回答一个问题。”</p>
+<p>“如果我要用神经网络学习下面这种规律呢？”</p>
+<p>他在黑板上画了一条弯曲的曲线：</p>
+<div class="codehilite"><pre><span></span><code>y
+│              ●
+│          ●
+│       ●
+│    ●
+│  ●
+│ ●
+│●
+└──────────────── x
+</code></pre></div>
+
+<p>林默想了一下。</p>
+<p>“多堆几层 Linear？”</p>
+<p>教授摇头。</p>
+<p>“那我们今天就看看——”</p>
+<blockquote>
+<p><strong>为什么一百层 Linear，也救不了一条不会拐弯的直线。</strong></p>
+</blockquote>
+<hr />
+<h2 id="nnlinear">一、先回到 <code>nn.Linear</code></h2>
+<p>昨天我们写过：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
+
+<p>它干的事情，本质上就是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>W</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=Wx+b
+</annotation></semantics></math></span></p>
+<p>一维情况下更简单：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>w</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=wx+b
+</annotation></semantics></math></span></p>
+<p>比如：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mn>2</mn><mi>x</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+y=2x+1
+</annotation></semantics></math></span></p>
+<p>画出来：</p>
+<div class="codehilite"><pre><span></span><code>y
+│
+│           /
+│         /
+│       /
+│     /
+│   /
+│ /
+└──────────────── x
+</code></pre></div>
+
+<p>永远是一条直线。</p>
+<p>参数 <code>w</code> 可以控制：</p>
+<blockquote>
+<p><strong>斜率。</strong></p>
+</blockquote>
+<p>参数 <code>b</code> 可以控制：</p>
+<blockquote>
+<p><strong>上下平移。</strong></p>
+</blockquote>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>w = 1       /
+           /
+
+w = 3         /
+             /
+            /
+           /
+
+w = -1    \
+           \
+            \
+</code></pre></div>
+
+<p>但无论怎么调整：</p>
+<blockquote>
+<p><strong>它永远不会弯。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_1">二、那我堆两层呢？</h2>
+<p>林默说：</p>
+<p>“一个 Linear 不行，那两个呢？”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>看起来已经很高级了：</p>
+<div class="codehilite"><pre><span></span><code>输入 x
+
+   │
+   ▼
+
+○ ○ ○ ○ ○ ○ ○ ○ ○ ○
+       第一层
+
+   │
+   ▼
+
+   ○
+ 第二层
+
+   │
+   ▼
+
+输出 y
+</code></pre></div>
+
+<p>十个隐藏神经元。</p>
+<p>应该很厉害吧？</p>
+<p>可教授开始推公式。</p>
+<p>第一层：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>h</mi><mo>=</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">
+h=W_1x+b_1
+</annotation></semantics></math></span></p>
+<p>第二层：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><mi>h</mi><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2h+b_2
+</annotation></semantics></math></span></p>
+<p>代进去：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><mo stretchy="false">(</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2(W_1x+b_1)+b_2
+</annotation></semantics></math></span></p>
+<p>展开：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>b</mi><mn>1</mn></msub><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+y=W_2W_1x+W_2b_1+b_2
+</annotation></semantics></math></span></p>
+<p>现在定义：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>W</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>W</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">
+W&#x27;=W_2W_1
+</annotation></semantics></math></span></p>
+<p>以及：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>b</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>b</mi><mn>1</mn></msub><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">
+b&#x27;=W_2b_1+b_2
+</annotation></semantics></math></span></p>
+<p>于是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msup><mi>W</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mi>x</mi><mo>+</mo><msup><mi>b</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">
+y=W&#x27;x+b&#x27;
+</annotation></semantics></math></span></p>
+<p>教授把粉笔一扔。</p>
+<p>“结束。”</p>
+<p>林默：</p>
+<p>“……”</p>
+<p>两层 Linear：</p>
+<div class="codehilite"><pre><span></span><code>Linear
+   ↓
+Linear
+</code></pre></div>
+
+<p>最终仍然等价于：</p>
+<div class="codehilite"><pre><span></span><code>一个 Linear
+</code></pre></div>
+
+<hr />
+<h2 id="_2">三、那一百层呢？</h2>
+<p>林默还不死心。</p>
+<div class="codehilite"><pre><span></span><code>Linear
+ ↓
+Linear
+ ↓
+Linear
+ ↓
+Linear
+ ↓
+...
+ ↓
+Linear
+</code></pre></div>
+
+<p>教授直接写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>W</mi><mn>100</mn></msub><msub><mi>W</mi><mn>99</mn></msub><mo>⋯</mo><msub><mi>W</mi><mn>2</mn></msub><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><mo>⋯</mo></mrow><annotation encoding="application/x-tex">
+W_{100}W_{99}\cdots W_2W_1x+\cdots
+</annotation></semantics></math></span></p>
+<p>无论中间怎么组合，最终仍然可以写成：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>W</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mi>x</mi><mo>+</mo><msup><mi>b</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">
+W&#x27;x+b&#x27;
+</annotation></semantics></math></span></p>
+<p>也就是说：</p>
+<blockquote>
+<p><strong>线性变换叠加线性变换，最终仍然是线性变换。</strong></p>
+</blockquote>
+<p>林默沉默了。</p>
+<p>“所以我花几个亿显存堆了一百层……”</p>
+<p>“结果数学表达能力可能还是一个 Linear？”</p>
+<p>“如果中间没有非线性，是这个意思。”</p>
+<p>这就像：</p>
+<div class="codehilite"><pre><span></span><code>直尺
++
+直尺
++
+直尺
++
+100 把直尺
+</code></pre></div>
+
+<p>你不会因此得到圆规。</p>
+<hr />
+<h2 id="_3">四、神经网络需要一个“破坏者”</h2>
+<p>教授在两个 Linear 中间插入一个东西：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>结构变成：</p>
+<div class="codehilite"><pre><span></span><code>Linear
+   ↓
+ ReLU
+   ↓
+Linear
+</code></pre></div>
+
+<p>林默看着那个熟悉的名字。</p>
+<p>“就是昨天的 <code>ReLU</code>。”</p>
+<p>“对。”</p>
+<p>“它负责破坏线性。”</p>
+<hr />
+<h2 id="relu">五、ReLU 是什么？</h2>
+<p>教授写：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mn>0</mn><mo separator="true">,</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+ReLU(x)=\max(0,x)
+</annotation></semantics></math></span></p>
+<p>林默：</p>
+<p>“就这？”</p>
+<p>“就这。”</p>
+<p>也就是说：</p>
+<div class="codehilite"><pre><span></span><code>输入 -5 → 0
+输入 -2 → 0
+输入 -1 → 0
+输入  0 → 0
+输入  1 → 1
+输入  2 → 2
+输入  5 → 5
+</code></pre></div>
+
+<p>Python 思维就是：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">relu</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>或者：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>它的图像是：</p>
+<div class="codehilite"><pre><span></span><code>y
+│
+│                /
+│              /
+│            /
+│          /
+│        /
+│──────●──────────── x
+│
+│
+</code></pre></div>
+
+<p>当：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>&lt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+x&lt;0
+</annotation></semantics></math></span></p>
+<p>输出：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn></mrow><annotation encoding="application/x-tex">
+0
+</annotation></semantics></math></span></p>
+<p>当：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+x&gt;0
+</annotation></semantics></math></span></p>
+<p>输出：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">
+x
+</annotation></semantics></math></span></p>
+<p>林默盯着那个折角。</p>
+<p>“它……”</p>
+<p>“拐弯了。”</p>
+<p>教授点头。</p>
+<blockquote>
+<p><strong>这一个小小的折角，就是神经网络拥有复杂表达能力的关键之一。</strong></p>
+</blockquote>
+<hr />
+<h2 id="linear-relu">六、Linear + ReLU 到底在干什么？</h2>
+<p>假设：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>z</mi><mo>=</mo><mi>w</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+z=wx+b
+</annotation></semantics></math></span></p>
+<p>然后：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+y=ReLU(z)
+</annotation></semantics></math></span></p>
+<p>比如：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>z</mi><mo>=</mo><mn>2</mn><mi>x</mi><mo>−</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">
+z=2x-4
+</annotation></semantics></math></span></p>
+<p>那么：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mn>2</mn><mi>x</mi><mo>−</mo><mn>4</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+y=ReLU(2x-4)
+</annotation></semantics></math></span></p>
+<p>什么时候开始大于 0？</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>2</mn><mi>x</mi><mo>−</mo><mn>4</mn><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+2x-4&gt;0
+</annotation></semantics></math></span></p>
+<p>所以：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>&gt;</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">
+x&gt;2
+</annotation></semantics></math></span></p>
+<p>于是图像：</p>
+<div class="codehilite"><pre><span></span><code>y
+│
+│                  /
+│                /
+│              /
+│            /
+│──────────●──────────── x
+           2
+</code></pre></div>
+
+<p>在 <code>x=2</code> 的地方出现一个：</p>
+<blockquote>
+<p><strong>拐点。</strong></p>
+</blockquote>
+<hr />
+<h2 id="relu_1">七、一个 ReLU 一个拐点，那很多呢？</h2>
+<p>教授突然画了三个神经元。</p>
+<p>第一个：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>h</mi><mn>1</mn></msub><mo>=</mo><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+h_1=ReLU(x-1)
+</annotation></semantics></math></span></p>
+<p>第二个：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>h</mi><mn>2</mn></msub><mo>=</mo><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+h_2=ReLU(x-3)
+</annotation></semantics></math></span></p>
+<p>第三个：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>h</mi><mn>3</mn></msub><mo>=</mo><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><mn>5</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+h_3=ReLU(x-5)
+</annotation></semantics></math></span></p>
+<p>分别意味着：</p>
+<div class="codehilite"><pre><span></span><code>h1 在 x=1 开始工作
+h2 在 x=3 开始工作
+h3 在 x=5 开始工作
+</code></pre></div>
+
+<p>然后再让下一层把它们组合起来：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>w</mi><mn>1</mn></msub><msub><mi>h</mi><mn>1</mn></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><msub><mi>h</mi><mn>2</mn></msub><mo>+</mo><msub><mi>w</mi><mn>3</mn></msub><msub><mi>h</mi><mn>3</mn></msub><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">
+y=w_1h_1+w_2h_2+w_3h_3+b
+</annotation></semantics></math></span></p>
+<p>你就可以得到：</p>
+<div class="codehilite"><pre><span></span><code>y
+│
+│              /
+│        _____/
+│       /
+│  ____/
+│ /
+│/
+└────────────────── x
+   1    3    5
+</code></pre></div>
+
+<p>林默突然明白了。</p>
+<p>“每个神经元都可以制造一个不同位置、不同方向的变化。”</p>
+<p>“然后下一层把这些变化组合起来。”</p>
+<p>“对。”</p>
+<p>神经元越来越多：</p>
+<div class="codehilite"><pre><span></span><code>很多 Linear
+     +
+很多 ReLU
+     ↓
+制造大量折线片段
+     ↓
+组合
+     ↓
+逼近复杂函数
+</code></pre></div>
+
+<p>比如真正的曲线：</p>
+<div class="codehilite"><pre><span></span><code>        ~~~~~~~
+     ~~~
+   ~~
+ ~~
+</code></pre></div>
+
+<p>神经网络可能用很多很小的折线去逼近：</p>
+<div class="codehilite"><pre><span></span><code>        __
+      _/  \_
+    _/      \_
+  _/
+_/
+</code></pre></div>
+
+<p>片段足够多以后，你肉眼看上去就越来越像一条曲线。</p>
+<hr />
+<h2 id="_4">八、一个非常重要的概念：隐藏层</h2>
+<p>教授重新写昨天的模型：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<p>结构：</p>
+<div class="codehilite"><pre><span></span><code>输入层
+x1  x2
+│   │
+└─┬─┘
+  ▼
+
+Linear(2, 4)
+
+  ▼
+
+h1 h2 h3 h4
+│  │  │  │
+└──┴──┴──┘
+    ▼
+
+   ReLU
+
+    ▼
+
+Linear(4, 1)
+
+    ▼
+
+   输出
+</code></pre></div>
+
+<p>中间：</p>
+<div class="codehilite"><pre><span></span><code>h1 h2 h3 h4
+</code></pre></div>
+
+<p>通常叫：</p>
+<blockquote>
+<p><strong>Hidden Layer——隐藏层。</strong></p>
+</blockquote>
+<p>为什么叫隐藏层？</p>
+<p>因为：</p>
+<div class="codehilite"><pre><span></span><code>输入 x
+</code></pre></div>
+
+<p>是我们能看到的数据。</p>
+<div class="codehilite"><pre><span></span><code>输出 y
+</code></pre></div>
+
+<p>也是我们关心的结果。</p>
+<p>但是中间的：</p>
+<div class="codehilite"><pre><span></span><code>h1 h2 h3 h4
+</code></pre></div>
+
+<p>并不是人工直接提供的标签。</p>
+<p>它们是模型内部学习出来的：</p>
+<blockquote>
+<p><strong>中间表示。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_5">九、“特征”开始出现了</h2>
+<p>教授给了一个更现实的例子。</p>
+<p>假设输入是一张图片。</p>
+<p>最原始的数据可能只是：</p>
+<div class="codehilite"><pre><span></span><code>像素
+像素
+像素
+像素
+像素
+...
+</code></pre></div>
+
+<p>但是模型经过一层层变换：</p>
+<div class="codehilite"><pre><span></span><code>原始像素
+   ↓
+某些简单模式
+   ↓
+边缘 / 纹理
+   ↓
+局部形状
+   ↓
+更复杂表示
+   ↓
+猫 / 狗
+</code></pre></div>
+
+<p>这里需要注意：</p>
+<p>这只是帮助理解的简化描述，真实神经网络内部学到的表示通常没这么干净，也未必能给每个神经元直接贴上“耳朵”“眼睛”这种人类可读标签。</p>
+<p>但核心思想成立：</p>
+<blockquote>
+<p><strong>隐藏层是在不断把数据转换成更适合完成任务的表示。</strong></p>
+</blockquote>
+<hr />
+<h2 id="representation-learning">十、这就是 Representation Learning</h2>
+<p>林默问：</p>
+<p>“传统机器学习不是经常要人工做特征工程吗？”</p>
+<p>“对。”</p>
+<p>比如以前做垃圾邮件分类，人可能手工设计：</p>
+<div class="codehilite"><pre><span></span><code>是否出现“中奖”
+是否出现“免费”
+感叹号数量
+URL 数量
+发件人特征
+……
+</code></pre></div>
+
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>原始数据
+    ↓
+人类设计特征
+    ↓
+模型
+</code></pre></div>
+
+<p>而深度学习非常重要的思想之一就是：</p>
+<div class="codehilite"><pre><span></span><code>原始数据
+    ↓
+神经网络
+    ↓
+自动学习内部表示
+    ↓
+完成任务
+</code></pre></div>
+
+<p>这也是为什么：</p>
+<blockquote>
+<p><strong>深度神经网络不仅是在“拟合答案”，还在学习如何表示数据。</strong></p>
+</blockquote>
+<p>林默在笔记上写：</p>
+<div class="codehilite"><pre><span></span><code>Hidden Layer
+≈
+模型内部学习特征表示的地方
+</code></pre></div>
+
+<hr />
+<h2 id="relu_2">十一、那为什么一定是 ReLU？</h2>
+<p>林默又问。</p>
+<p>“非线性有很多吧？”</p>
+<p>“当然。”</p>
+<p>教授写下三个名字：</p>
+<div class="codehilite"><pre><span></span><code>Sigmoid
+Tanh
+ReLU
+</code></pre></div>
+
+<hr />
+<h3 id="sigmoid">Sigmoid</h3>
+<p>公式：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>σ</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>x</mi></mrow></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+\sigma(x)=\frac{1}{1+e^{-x}}
+</annotation></semantics></math></span></p>
+<p>图像大概：</p>
+<div class="codehilite"><pre><span></span><code>1 │                ______
+  │             __/
+  │           _/
+  │         _/
+  │       _/
+  │_____/
+0 └──────────────────── x
+</code></pre></div>
+
+<p>它可以把任意实数压到：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mo stretchy="false">(</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+(0,1)
+</annotation></semantics></math></span></p>
+<p>所以看起来特别像：</p>
+<div class="codehilite"><pre><span></span><code>概率
+</code></pre></div>
+
+<p>比如：</p>
+<div class="codehilite"><pre><span></span><code>0.01
+0.35
+0.82
+0.99
+</code></pre></div>
+
+<p>但要小心：</p>
+<blockquote>
+<p>Sigmoid 的输出可以解释成概率，需要具体任务和损失函数等条件配合，并不是“见到 Sigmoid 就一定是概率”。</p>
+</blockquote>
+<hr />
+<h2 id="sigmoid_1">十二、Sigmoid 的一个问题：梯度容易变小</h2>
+<p>教授在曲线两端画圈：</p>
+<div class="codehilite"><pre><span></span><code>          ___________
+       __/
+     _/
+   _/
+__/
+</code></pre></div>
+
+<p>当输入特别大：</p>
+<div class="codehilite"><pre><span></span><code>x = 100
+</code></pre></div>
+
+<p>Sigmoid 已经非常接近：</p>
+<div class="codehilite"><pre><span></span><code>1
+</code></pre></div>
+
+<p>曲线几乎变平。</p>
+<p>而导数是什么？</p>
+<blockquote>
+<p><strong>斜率。</strong></p>
+</blockquote>
+<p>曲线很平：</p>
+<div class="codehilite"><pre><span></span><code>斜率 ≈ 0
+</code></pre></div>
+
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>gradient ≈ 0
+</code></pre></div>
+
+<p>林默立刻联想到上一章：</p>
+<div class="codehilite"><pre><span></span><code>参数更新量
+=
+learning_rate × gradient
+</code></pre></div>
+
+<p>如果：</p>
+<div class="codehilite"><pre><span></span><code>gradient ≈ 0
+</code></pre></div>
+
+<p>那么：</p>
+<div class="codehilite"><pre><span></span><code>参数几乎不更新
+</code></pre></div>
+
+<p>“所以深层网络反向传播的时候，梯度可能越来越小？”</p>
+<p>“对，这就是经典的——”</p>
+<blockquote>
+<p><strong>梯度消失（Vanishing Gradient）</strong></p>
+</blockquote>
+<p>的一部分来源。</p>
+<hr />
+<h2 id="relu_3">十三、ReLU 为什么流行？</h2>
+<p>再看：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>max</mi><mo>⁡</mo><mo stretchy="false">(</mo><mn>0</mn><mo separator="true">,</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">
+ReLU(x)=\max(0,x)
+</annotation></semantics></math></span></p>
+<p>当：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+x&gt;0
+</annotation></semantics></math></span></p>
+<p>时：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>x</mi></mrow><annotation encoding="application/x-tex">
+ReLU(x)=x
+</annotation></semantics></math></span></p>
+<p>它的导数：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>L</mi><msup><mi>U</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
+ReLU&#x27;(x)=1
+</annotation></semantics></math></span></p>
+<p>所以正区间不会像 Sigmoid 饱和区那样天然把梯度压得很小。</p>
+<p>而且计算极其简单：</p>
+<div class="codehilite"><pre><span></span><code>x &gt; 0 ?
+
+是 → x
+否 → 0
+</code></pre></div>
+
+<p>因此 ReLU 长期以来是非常常见的激活函数。</p>
+<p>不过教授马上补了一句：</p>
+<p>“不要记成‘ReLU 没有梯度问题’。”</p>
+<p>因为当：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo>&lt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+x&lt;0
+</annotation></semantics></math></span></p>
+<p>时：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>L</mi><mi>U</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
+ReLU(x)=0
+</annotation></semantics></math></span></p>
+<p>导数也是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn></mrow><annotation encoding="application/x-tex">
+0
+</annotation></semantics></math></span></p>
+<p>如果一个神经元长期落在负区间，就可能一直输出 0、梯度也为 0。</p>
+<p>这叫：</p>
+<blockquote>
+<p><strong>Dying ReLU。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_6">十四、神经网络训练，其实是在移动“折线”</h2>
+<p>教授重新画：</p>
+<div class="codehilite"><pre><span></span><code>Linear
+↓
+ReLU
+↓
+Linear
+↓
+ReLU
+↓
+Linear
+</code></pre></div>
+
+<p>训练开始：</p>
+<div class="codehilite"><pre><span></span><code>随机 weight
+随机 bias
+</code></pre></div>
+
+<p>所以一开始模型形成的函数可能乱七八糟：</p>
+<div class="codehilite"><pre><span></span><code>预测
+│
+│   /\__
+│__/    \____
+│
+└──────────────── x
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</code></pre></div>
+
+<p>计算：</p>
+<blockquote>
+<p>每个 <code>weight</code> 和 <code>bias</code> 改一点，会让 Loss 怎么变化？</p>
+</blockquote>
+<p>再：</p>
+<div class="codehilite"><pre><span></span><code>optimizer.step()
+</code></pre></div>
+
+<p>修改：</p>
+<div class="codehilite"><pre><span></span><code>weight
+bias
+</code></pre></div>
+
+<p>这些参数一变：</p>
+<div class="codehilite"><pre><span></span><code>Linear 的斜率变了
+Linear 的位置变了
+↓
+ReLU 的拐点位置也可能变化
+↓
+整个网络表达的函数发生变化
+</code></pre></div>
+
+<p>然后继续：</p>
+<div class="codehilite"><pre><span></span><code>预测
+→ Loss
+→ backward
+→ step
+→ 预测
+→ Loss
+→ backward
+→ step
+...
+</code></pre></div>
+
+<p>于是模型表示的函数逐渐靠近训练数据要求的规律。</p>
+<hr />
+<h2 id="_7">十五、突然出现一道经典题</h2>
+<p>教授擦掉黑板。</p>
+<p>写：</p>
+<div class="codehilite"><pre><span></span><code>0 XOR 0 = 0
+0 XOR 1 = 1
+1 XOR 0 = 1
+1 XOR 1 = 0
+</code></pre></div>
+
+<p>“XOR。”</p>
+<p>林默认识。</p>
+<p>把四个点画出来：</p>
+<div class="codehilite"><pre><span></span><code>x2
+│
+1│ ●1       ●0
+ │
+ │
+0│ ●0       ●1
+ └────────────── x1
+   0          1
+</code></pre></div>
+
+<p>目标是：</p>
+<div class="codehilite"><pre><span></span><code>一类：左上 + 右下
+另一类：左下 + 右上
+</code></pre></div>
+
+<p>教授问：</p>
+<p>“你能画一条直线把两类完全分开吗？”</p>
+<p>林默试了半天。</p>
+<p>“不行。”</p>
+<p>“这就是经典的——”</p>
+<blockquote>
+<p><strong>线性不可分。</strong></p>
+</blockquote>
+<p>单纯的线性模型没办法解决 XOR。</p>
+<p>但：</p>
+<div class="codehilite"><pre><span></span><code>Linear
+↓
+非线性激活
+↓
+Linear
+</code></pre></div>
+
+<p>就有能力形成更复杂的决策边界。</p>
+<p>林默这次真正明白了：</p>
+<blockquote>
+<p><strong>非线性不是为了让网络看起来复杂。</strong></p>
+<p><strong>它直接决定了网络能否表达大量线性模型无法表达的关系。</strong></p>
+</blockquote>
+<hr />
+<h2 id="nnsequential">十六、把网络写得更漂亮：<code>nn.Sequential</code></h2>
+<p>教授看着之前的代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+
+<p>“如果网络只是按顺序执行，可以简单一点。”</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MyNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>甚至直接：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>林默看着：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>突然觉得神经网络第一次有了一种搭积木的感觉：</p>
+<div class="codehilite"><pre><span></span><code>Linear
+  ↓
+ReLU
+  ↓
+Linear
+</code></pre></div>
+
+<hr />
+<h2 id="mlp">十七、这东西其实有名字：MLP</h2>
+<p>教授在黑板上写：</p>
+<blockquote>
+<p><strong>MLP</strong></p>
+</blockquote>
+<p>全称：</p>
+<blockquote>
+<p><strong>Multi-Layer Perceptron</strong></p>
+</blockquote>
+<p>中文通常叫：</p>
+<blockquote>
+<p><strong>多层感知机</strong></p>
+</blockquote>
+<p>典型结构：</p>
+<div class="codehilite"><pre><span></span><code>输入
+ ↓
+Linear
+ ↓
+ReLU
+ ↓
+Linear
+ ↓
+ReLU
+ ↓
+Linear
+ ↓
+输出
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">128</span><span class="p">),</span>
+    <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+
+    <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>形状变化：</p>
+<div class="codehilite"><pre><span></span><code>100
+ ↓
+256
+ ↓
+128
+ ↓
+10
+</code></pre></div>
+
+<p>这里：</p>
+<div class="codehilite"><pre><span></span><code>100 → 输入特征维度
+256 → 隐藏维度
+128 → 隐藏维度
+10  → 输出维度
+</code></pre></div>
+
+<p>教授停顿了一下。</p>
+<p>“记住这个结构。”</p>
+<p>“以后你学 Transformer，会再次看到类似的东西。”</p>
+<p>林默一愣。</p>
+<p>“Transformer 里面也有 MLP？”</p>
+<p>“当然。”</p>
+<p>“而且非常重要。”</p>
+<p>现代 Transformer block 里通常存在类似：</p>
+<div class="codehilite"><pre><span></span><code>Attention
+   ↓
+...
+   ↓
+MLP / FFN
+</code></pre></div>
+
+<p>不过其中的激活函数现代模型常见的已经不只是 ReLU，还会看到：</p>
+<div class="codehilite"><pre><span></span><code>GELU
+SiLU / Swish
+SwiGLU
+</code></pre></div>
+
+<p>这些以后再讲。</p>
+<hr />
+<h2 id="_8">十八、今天真正应该记住什么？</h2>
+<p>夜里十一点。</p>
+<p>教授没有让林默背：</p>
+<div class="codehilite"><pre><span></span><code>ReLU公式
+Sigmoid公式
+Tanh公式
+</code></pre></div>
+
+<p>而是在黑板上画了最后一张图：</p>
+<div class="codehilite"><pre><span></span><code>             Linear
+                │
+                ▼
+       只能做线性变换
+                │
+                ▼
+        再堆一个 Linear
+                │
+                ▼
+         还是线性变换
+                │
+                ▼
+            加 ReLU
+                │
+                ▼
+          引入非线性
+                │
+                ▼
+      可以表达复杂函数
+                │
+                ▼
+       多层不断学习表示
+                │
+                ▼
+         Deep Learning
+</code></pre></div>
+
+<p>林默在笔记本上写下了一句话：</p>
+<blockquote>
+<p><strong>Linear 负责变换，Activation 负责让这种变换拥有非线性表达能力。</strong></p>
+</blockquote>
+<p>随后又补了一句：</p>
+<blockquote>
+<p><strong>神经网络之所以强，不只是因为“层数多”，而是因为多层可学习变换与非线性组合起来，可以形成复杂的函数。</strong></p>
+</blockquote>
+<hr />
+<h2 id="_9">十九、但林默发现了新的问题</h2>
+<p>他重新看向训练代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>突然问：</p>
+<p>“教授。”</p>
+<p>“我们一直在说 <code>loss</code>。”</p>
+<p>“但是——”</p>
+<p>“这个 Loss 到底是谁规定的？”</p>
+<p>教授停下脚步。</p>
+<p>林默继续问：</p>
+<p>“回归为什么经常用 MSE？”</p>
+<p>“分类为什么又冒出来 CrossEntropy？”</p>
+<p>“如果模型输出 10 个数字，怎么知道哪个数字代表猫？”</p>
+<p>“还有我经常看到分类代码最后一层没有 <code>Softmax</code>，为什么 <code>CrossEntropyLoss</code> 又能直接算？”</p>
+<p>教授慢慢转过身。</p>
+<p>“很好。”</p>
+<p>他在黑板上写：</p>
+<div class="codehilite"><pre><span></span><code>Regression
+    ↓
+MSE
+
+Classification
+    ↓
+Logits
+    ↓
+Softmax
+    ↓
+Cross Entropy
+</code></pre></div>
+
+<p>然后在 <code>Softmax</code> 上画了一个巨大的问号。</p>
+<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-02.html">← 上一章<span>神经网络诞生</span></a><a href="chapter-04.html">下一章 →<span>审判模型的法官</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>
