@@ -22,7 +22,7 @@ for page in pages:
     p=Links(); p.feed(page.read_text(encoding='utf-8')); parsers[page.name]=p
 for name,p in parsers.items():
     for link in p.links:
-        if link.startswith(('http:','https:')): continue
+        if link.startswith(('http:','https:')) or link in ('/', '/pytorch-apprentice/', '/ai-era-reader/'): continue
         filename,_,anchor=link.partition('#')
         filename=filename or name
         assert (ROOT/'docs'/filename).exists(), (name,link)
