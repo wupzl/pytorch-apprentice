@@ -1,6 +1,6 @@
 # 内容整理说明
 
-这是一部以林默和陈教授的对话串起概念的 PyTorch 入门读物。本次发布现有十章；第十一章仅有预告，标记为待续。
+这是一部以林默和陈教授的对话串起概念的 PyTorch 入门读物。当前发布十三章；第十四章仅有预告，标记为待续。
 
 ## 保留了什么
 
@@ -17,6 +17,19 @@
 - 增加两份独立可运行示例及安装、运行说明。
 
 ## 技术资料
+
+### 2026-10-22 续写整理
+
+- 合并第 11–13 章，移除已经发布章节的重复长预告，保留第十四章待续；原稿另存 source/pytorch-continue-original.md。
+- 修复 Mini-GPT、采样、AMP、梯度累积、LoRA、SDPA、QLoRA、SFT 与 DPO 代码丢失换行的问题，规范章节与幕、小节的层级。
+- 区分预先移位的下一 Token 标签与在 Loss 中移位的 SFT 标签；补清第一回答 Token 的监督位置、Prompt/PAD 标签屏蔽和 Attention Mask 的区别。
+- 明确梯度累积按实际有效样本/Token 加权、末尾不足窗口也需更新，以及 AMP 的缩放更新时机。
+- 将原稿显存交互界面残留改为静态估算表，明确数据并行假设、GB/GiB 和 FP32 AdamW 状态预算，不宣称硬件实测。
+- LoRA 参数跟随基础层的设备和 dtype，说明 B 零初始化时的首步梯度；QLoRA 改用明确的单卡设备配置，区分加载骨架与完整训练。
+- 澄清经典 DPO 参考模型与相对偏好目标；经典 RLHF 的奖励模型也常来自成对偏好，不能简单按是否有偏好对区分两者。
+- 保留三章原有五道练习并附折叠答案，新增 Mini-GPT、LoRA、SFT/DPO 的 CPU 可运行示例。
+
+补充参考：[AMP 与梯度累积](https://docs.pytorch.org/docs/stable/notes/amp_examples.html)、[Activation Checkpoint](https://docs.pytorch.org/docs/stable/checkpoint.html)、[PEFT 量化训练](https://huggingface.co/docs/peft/developer_guides/quantization)、[bitsandbytes](https://huggingface.co/docs/transformers/quantization/bitsandbytes)、[DPO Trainer](https://huggingface.co/docs/trl/dpo_trainer)。
 
 易错 API 说明对照以下官方资料整理。文中类比服务于直觉理解，并非对实际模型内部行为的精确描述。
 

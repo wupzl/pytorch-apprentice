@@ -16,13 +16,13 @@ class Links(HTMLParser):
             if target: self.links.append(target)
 
 pages=list((ROOT/'docs').glob('*.html'))
-assert len(pages)==13
+assert len(pages)==16
 parsers={}
 for page in pages:
     p=Links(); p.feed(page.read_text(encoding='utf-8')); parsers[page.name]=p
 for name,p in parsers.items():
     for link in p.links:
-        if link.startswith(('http:','https:')) or link in ('/', '/pytorch-apprentice/', '/ai-era-reader/'): continue
+        if link.startswith(('http:','https:')) or link in ('/', '/pytorch-apprentice/', '/ai-era-reader/', '/data-empire-reader/'): continue
         filename,_,anchor=link.partition('#')
         filename=filename or name
         assert (ROOT/'docs'/filename).exists(), (name,link)
@@ -45,8 +45,24 @@ with sync_playwright() as pw:
             response=page.goto('http://127.0.0.1:4174/'+name)
             assert response.status==200
             assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,name)
-        page.goto('http://127.0.0.1:4174/chapter-10.html')
-        assert page.locator('math').count()>30
+        for chapter in (11,12,13):
+            page.goto(f'http://127.0.0.1:4174/chapter-{chapter}.html')
+            assert page.locator('.sidebar nav a').count()==13
+            assert page.locator('.answers').count()==1
+            assert not page.locator('.answers').get_attribute('open')
+            page.locator('.answers summary').click()
+            assert page.locator('.answers li').count()==5
+            assert page.locator('article math').count()>0
+        page.evaluate("localStorage.setItem('pa-progress', JSON.stringify({chapter:13,ratio:0.4}))")
+        page.goto('http://127.0.0.1:4174/index.html')
+        assert page.locator('.chapter-card').count()==13
+        assert page.locator('#resume').get_attribute('href')=='chapter-13.html'
+        page.locator('#search-open').click(); page.locator('#query').fill('policy_logratio')
+        page.wait_for_function("document.querySelectorAll('.search-result').length>0")
+        assert 'chapter-13.html' in page.locator('.search-result').first.get_attribute('href')
+        page.keyboard.press('Escape'); page.locator('#search-dialog').wait_for(state='hidden')
+        page.goto('http://127.0.0.1:4174/chapter-13.html')
+        assert page.locator('math').count()>20
         page.locator('#theme').click()
         assert page.locator('html').get_attribute('data-theme')=='dark'
         page.locator('#larger').click()
@@ -70,9 +86,9 @@ with sync_playwright() as pw:
         page.locator('#theme').click()
         (ROOT/'test-results').mkdir(exist_ok=True)
         page.screenshot(path=str(ROOT/'test-results'/f'home-{width}.png'),full_page=True)
-        page.goto('http://127.0.0.1:4174/chapter-10.html')
+        page.goto('http://127.0.0.1:4174/chapter-13.html')
         page.evaluate("scrollTo({top:0,behavior:'instant'})"); page.screenshot(path=str(ROOT/'test-results'/f'chapter-{width}.png'))
         assert not errors,errors
         context.close()
     browser.close()
-print('PASS: 13 pages, local files/anchors, Python syntax, mobile/desktop layouts, math, theme/font persistence, clipboard, progress restore and full-text search.')
+print('PASS: 16 pages, 13 chapters, local files/anchors, Python syntax, mobile/desktop layouts, math, theme/font persistence, clipboard, progress restore, continued-chapter search and folded answers.')

@@ -1,19 +1,25 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>深渊中的通天塔 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
-<body data-chapter="10"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
-<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="current" href="chapter-10.html" aria-current=page><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>深渊中的通天塔 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="10" data-chapter-count="13"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="current" href="chapter-10.html" aria-current=page><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
 <ul>
 <li><a href="#_1">一、第一场灾难：梯度在深层网络中消失</a></li>
 <li><a href="#_2">二、残差连接：给梯度修一条高速公路</a></li>
 <li><a href="#x-fx">三、为什么 x + F(x) 有用？</a></li>
 <li><a href="#_3">四、残差连接的第二个秘密：学习变化，而不是从头重建</a></li>
 <li><a href="#pytorch">五、PyTorch 里的残差连接</a></li>
-<li><a href="#_4">六、第二场灾难：网络里的数值开始失控</a></li>
+<li><a href="#_4">六、第二场灾难：网络里的数值开始失控</a><ul>
+<li><a href="#normalization">Normalization</a></li>
+</ul>
+</li>
 <li><a href="#layernorm-token">七、LayerNorm：让每个 Token 整理自己的数值</a></li>
 <li><a href="#layernorm">八、LayerNorm 不是简单把数值固定住</a></li>
 <li><a href="#layernorm_1">九、LayerNorm 究竟沿哪个维度计算？</a></li>
 <li><a href="#transformer-layernorm-batchnorm">十、为什么 Transformer 常用 LayerNorm，而不是 BatchNorm？</a></li>
-<li><a href="#attention">十一、第三个问题：Attention 为什么还不够？</a></li>
+<li><a href="#attention">十一、第三个问题：Attention 为什么还不够？</a><ul>
+<li><a href="#ffn">FFN</a></li>
+</ul>
+</li>
 <li><a href="#ffn-token">十二、FFN：每个 Token 自己的加工车间</a></li>
 <li><a href="#ffn_1">十三、FFN 为什么要先升维，再降维？</a></li>
 <li><a href="#ffn_2">十四、FFN 的参数量究竟有多大？</a></li>
@@ -35,22 +41,28 @@
 <li><a href="#_6">三十、现在可以把前十章全部连起来了</a></li>
 <li><a href="#_7">三十一、林默最后还有三个问题</a></li>
 <li><a href="#_8">三十二、最后一道理解测试</a></li>
-<li><a href="#transformer-gpt">待续 · 第十一章预告：《预测下一个词——从 Transformer 到 GPT 的诞生》</a></li>
+<li><a href="#block-gpt_1">从 Block 到 GPT</a></li>
 </ul>
 </div>
-</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 10 <span>/ 10 · 约 48 分钟</span></p><h1>深渊中的通天塔</h1><p class="topics">Residual · LayerNorm · FFN · Transformer Block</p><div class="bridge">把信息交互与特征加工组装起来，让深层网络站稳。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="current" href="chapter-10.html" aria-current=page><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 10 <span>/ 13 · 约 47 分钟</span></p><h1>深渊中的通天塔</h1><p class="topics">Residual · LayerNorm · FFN · Transformer Block</p><div class="bridge">把信息交互与特征加工组装起来，让深层网络站稳。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="current" href="chapter-10.html" aria-current=page><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><div class="toc">
 <ul>
 <li><a href="#_1">一、第一场灾难：梯度在深层网络中消失</a></li>
 <li><a href="#_2">二、残差连接：给梯度修一条高速公路</a></li>
 <li><a href="#x-fx">三、为什么 x + F(x) 有用？</a></li>
 <li><a href="#_3">四、残差连接的第二个秘密：学习变化，而不是从头重建</a></li>
 <li><a href="#pytorch">五、PyTorch 里的残差连接</a></li>
-<li><a href="#_4">六、第二场灾难：网络里的数值开始失控</a></li>
+<li><a href="#_4">六、第二场灾难：网络里的数值开始失控</a><ul>
+<li><a href="#normalization">Normalization</a></li>
+</ul>
+</li>
 <li><a href="#layernorm-token">七、LayerNorm：让每个 Token 整理自己的数值</a></li>
 <li><a href="#layernorm">八、LayerNorm 不是简单把数值固定住</a></li>
 <li><a href="#layernorm_1">九、LayerNorm 究竟沿哪个维度计算？</a></li>
 <li><a href="#transformer-layernorm-batchnorm">十、为什么 Transformer 常用 LayerNorm，而不是 BatchNorm？</a></li>
-<li><a href="#attention">十一、第三个问题：Attention 为什么还不够？</a></li>
+<li><a href="#attention">十一、第三个问题：Attention 为什么还不够？</a><ul>
+<li><a href="#ffn">FFN</a></li>
+</ul>
+</li>
 <li><a href="#ffn-token">十二、FFN：每个 Token 自己的加工车间</a></li>
 <li><a href="#ffn_1">十三、FFN 为什么要先升维，再降维？</a></li>
 <li><a href="#ffn_2">十四、FFN 的参数量究竟有多大？</a></li>
@@ -72,7 +84,7 @@
 <li><a href="#_6">三十、现在可以把前十章全部连起来了</a></li>
 <li><a href="#_7">三十一、林默最后还有三个问题</a></li>
 <li><a href="#_8">三十二、最后一道理解测试</a></li>
-<li><a href="#transformer-gpt">待续 · 第十一章预告：《预测下一个词——从 Transformer 到 GPT 的诞生》</a></li>
+<li><a href="#block-gpt_1">从 Block 到 GPT</a></li>
 </ul>
 </div>
 </details><article><blockquote>
@@ -1506,80 +1518,7 @@ Transformer Block
 <blockquote>
 <p>纸上练习参考：1. 恒等路径；2. 最后 512 维；3. 增加非线性表达容量；4. x + Attention(LN(x))；5. [B,N,D] → [B,N,D]。</p>
 </blockquote>
-<h2 id="transformer-gpt">待续 · 第十一章预告：《预测下一个词——从 Transformer 到 GPT 的诞生》</h2>
-<p>夜色渐深。</p>
-<p>林默望着自己写好的 Transformer Block：</p>
-<div class="codehilite"><pre><span></span><code>x = block(x)
-</code></pre></div>
-
-<p>他突然发现一个更根本的问题。</p>
-<p>“教授。”</p>
-<p>“我们费了这么大劲，终于把输入文本变成了上下文表示。”</p>
-<p>“但——”</p>
-<p>“它究竟是怎么学会说话的？”</p>
-<p>教授在黑板上写下一句话：</p>
-<blockquote>
-<p>我今天学习了 PyTorch。</p>
-</blockquote>
-<p>然后擦掉最后一个词。</p>
-<p>变成：</p>
-<blockquote>
-<p>我今天学习了 ______</p>
-</blockquote>
-<p>“如果让模型预测空白处的下一个 Token，会发生什么？”</p>
-<p>林默想了想。</p>
-<p>“它可能预测 PyTorch？”</p>
-<p>“对。”</p>
-<p>“如果让它预测完一个，再把预测结果放回输入呢？”</p>
-<p>林默突然意识到了什么。</p>
-<p>教授写：</p>
-<div class="codehilite"><pre><span></span><code>输入：
-
-我今天学习了
-
-       ↓
-
-预测下一个 Token：
-
-PyTorch
-
-       ↓
-
-拼接：
-
-我今天学习了 PyTorch
-
-       ↓
-
-再次预测：
-
-。
-
-       ↓
-
-拼接：
-
-我今天学习了 PyTorch。
-
-       ↓
-
-继续预测……
-</code></pre></div>
-
-<p>林默猛地抬头。</p>
-<p>“所以大语言模型生成文本——”</p>
-<p>“就是不断预测下一个 Token？”</p>
-<p>教授点头。</p>
-<p>“你终于走到了 GPT 的起点。”</p>
-<p>后续计划（尚未发布）：从零组装一个真正可以训练、预测并生成文本的 Mini-GPT，深入讲解：</p>
-<ul>
-<li>Decoder-Only Transformer 为什么适合文本生成。</li>
-<li>Next Token Prediction 如何构造训练标签。</li>
-<li>Causal Mask 如何保证不偷看答案。</li>
-<li>为什么一次前向传播可以同时训练整个序列的多个预测位置。</li>
-<li>Logits、Temperature、Top-k、Top-p 如何决定生成结果。</li>
-<li>为什么模型训练时可以并行处理序列，而推理时通常逐 Token 生成。</li>
-<li>如何使用 PyTorch 完成一个最小可运行的 GPT 训练与生成程序。</li>
-</ul>
-<p>第十一章尚未发布。本次阅读到这里告一段落。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-09.html">← 上一章<span>所有词都在互相打量</span></a><a href="index.html">本卷读毕 →<span>第十一章待续 · 返回目录</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
-<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>
+<h2 id="block-gpt_1">从 Block 到 GPT</h2>
+<p>林默已经组装好了 Transformer Block，却还想知道：“它怎样学会说话？”</p>
+<p>陈教授在黑板上留下一个词：预测。带着这个问题，进入第十一章。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-09.html">← 上一章<span>所有词都在互相打量</span></a><a href="chapter-11.html">下一章 →<span>预测下一个词</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>

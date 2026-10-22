@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>预测下一个词 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="11" data-chapter-count="13"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="current" href="chapter-11.html" aria-current=page><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<ul>
+<li><a href="#token">一、语言模型的终极任务：预测下一个 Token</a></li>
+<li><a href="#_1">二、最关键的技巧：输入与预测目标错开一格</a></li>
+<li><a href="#_2">三、一个严重问题：模型会不会偷看答案？</a></li>
+<li><a href="#causal-mask">四、Causal Mask：禁止偷看未来</a></li>
+<li><a href="#gpt">五、现在开始建造 GPT</a></li>
+<li><a href="#lm-head-shape">六、LM Head 输出什么 Shape？</a></li>
+<li><a href="#gpt-loss">七、训练 GPT 时，Loss 怎么算？</a></li>
+<li><a href="#pytorch-mini-gpt">八、真正动手：用 PyTorch 制造 Mini-GPT</a></li>
+<li><a href="#mini-gpt-tensor">九、Mini-GPT 的每个 Tensor 形状</a></li>
+<li><a href="#_3">十、让模型真正训练起来</a></li>
+<li><a href="#_4">十一、训练完了，为什么还不会自动生成文本？</a></li>
+<li><a href="#_5">十二、生成的第一步：只看最后一个位置</a></li>
+<li><a href="#logits-token">十三、怎么从 Logits 选择一个 Token？</a></li>
+<li><a href="#sampling-token">十四、Sampling：按概率抽取下一个 Token</a></li>
+<li><a href="#temperature">十五、Temperature：控制生成有多随机</a></li>
+<li><a href="#top-k-k">十六、Top-k：只允许最有希望的 k 个候选参与</a></li>
+<li><a href="#top-p">十七、Top-p：候选数量不固定</a></li>
+<li><a href="#_6">十八、完成文本生成函数</a></li>
+<li><a href="#_7">十九、生成第一段文本</a></li>
+<li><a href="#token_1">二十、一个更深的问题：为什么生成时只预测一个 Token？</a></li>
+<li><a href="#_8">二十一、如果每次都重新计算全部上下文，会发生什么？</a></li>
+<li><a href="#kv-cache">二十二、KV Cache：把过去的计算结果保存起来</a></li>
+<li><a href="#prefill-decode">二十三、Prefill 与 Decode</a></li>
+<li><a href="#prefill-decode_1">二十四、为什么 Prefill 和 Decode 的性能瓶颈不同？</a></li>
+<li><a href="#gpt_1">二十五、现在才真正理解 GPT 的名字</a></li>
+<li><a href="#token_2">二十六、但一个会预测 Token 的模型，为什么还能回答问题？</a></li>
+<li><a href="#sft">二十七、预训练模型为什么还需要 SFT？</a></li>
+<li><a href="#_9">二十八、林默突然把所有知识连接起来了</a></li>
+<li><a href="#_10">二十九、今天的五道思考题</a></li>
+</ul>
+</div>
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 11 <span>/ 13 · 约 50 分钟</span></p><h1>预测下一个词</h1><p class="topics">Mini-GPT · 因果语言建模 · 采样与 KV Cache</p><div class="bridge">让上一章的 Transformer 学会预测下一个 Token，再把预测接回输入，生成第一段文字。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="current" href="chapter-11.html" aria-current=page><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><div class="toc">
+<ul>
+<li><a href="#token">一、语言模型的终极任务：预测下一个 Token</a></li>
+<li><a href="#_1">二、最关键的技巧：输入与预测目标错开一格</a></li>
+<li><a href="#_2">三、一个严重问题：模型会不会偷看答案？</a></li>
+<li><a href="#causal-mask">四、Causal Mask：禁止偷看未来</a></li>
+<li><a href="#gpt">五、现在开始建造 GPT</a></li>
+<li><a href="#lm-head-shape">六、LM Head 输出什么 Shape？</a></li>
+<li><a href="#gpt-loss">七、训练 GPT 时，Loss 怎么算？</a></li>
+<li><a href="#pytorch-mini-gpt">八、真正动手：用 PyTorch 制造 Mini-GPT</a></li>
+<li><a href="#mini-gpt-tensor">九、Mini-GPT 的每个 Tensor 形状</a></li>
+<li><a href="#_3">十、让模型真正训练起来</a></li>
+<li><a href="#_4">十一、训练完了，为什么还不会自动生成文本？</a></li>
+<li><a href="#_5">十二、生成的第一步：只看最后一个位置</a></li>
+<li><a href="#logits-token">十三、怎么从 Logits 选择一个 Token？</a></li>
+<li><a href="#sampling-token">十四、Sampling：按概率抽取下一个 Token</a></li>
+<li><a href="#temperature">十五、Temperature：控制生成有多随机</a></li>
+<li><a href="#top-k-k">十六、Top-k：只允许最有希望的 k 个候选参与</a></li>
+<li><a href="#top-p">十七、Top-p：候选数量不固定</a></li>
+<li><a href="#_6">十八、完成文本生成函数</a></li>
+<li><a href="#_7">十九、生成第一段文本</a></li>
+<li><a href="#token_1">二十、一个更深的问题：为什么生成时只预测一个 Token？</a></li>
+<li><a href="#_8">二十一、如果每次都重新计算全部上下文，会发生什么？</a></li>
+<li><a href="#kv-cache">二十二、KV Cache：把过去的计算结果保存起来</a></li>
+<li><a href="#prefill-decode">二十三、Prefill 与 Decode</a></li>
+<li><a href="#prefill-decode_1">二十四、为什么 Prefill 和 Decode 的性能瓶颈不同？</a></li>
+<li><a href="#gpt_1">二十五、现在才真正理解 GPT 的名字</a></li>
+<li><a href="#token_2">二十六、但一个会预测 Token 的模型，为什么还能回答问题？</a></li>
+<li><a href="#sft">二十七、预训练模型为什么还需要 SFT？</a></li>
+<li><a href="#_9">二十八、林默突然把所有知识连接起来了</a></li>
+<li><a href="#_10">二十九、今天的五道思考题</a></li>
+</ul>
+</div>
+</details><article><blockquote>
+<p>阅读提示：本章的字符级 Mini-GPT 只在极小语料上演示训练与生成，不会因此成为通用问答模型。get_batch 已经移位标签，MiniGPT.forward 中不要再移位。代码没有实现 KV Cache，相关章节用于理解工程原理。</p>
+</blockquote>
+<p>第十一天。</p>
+<p>凌晨两点。</p>
+<p>林默站在实验室中央，面前摆放着十天来制造的所有零件。</p>
+<div class="codehilite"><pre><span></span><code>Tensor
+  ↓
+Autograd
+  ↓
+nn.Module
+  ↓
+Embedding
+  ↓
+Self-Attention
+  ↓
+LayerNorm
+  ↓
+FFN
+  ↓
+Transformer Block
+</code></pre></div>
+
+<p>他已经能够用 PyTorch 构建一个 Transformer Block。</p>
+<p>甚至可以将它堆叠成几十层的深度网络。</p>
+<p>但一个问题始终困扰着他。</p>
+<p>“教授。”</p>
+<p>“我们现在拥有 Transformer 了。”</p>
+<p>“可是它只会把输入变成向量。”</p>
+<p>“它究竟是怎么学会回答问题、写代码、生成文章的？”</p>
+<p>陈教授放下咖啡。</p>
+<p>“你认为，训练一个会说话的模型，需要什么？”</p>
+<p>林默想了想。</p>
+<p>“海量问答数据？”</p>
+<p>“不一定。”</p>
+<p>“人工标注的正确答案？”</p>
+<p>“也不一定。”</p>
+<p>教授打开电脑，在屏幕上写下：</p>
+<blockquote>
+<p>今天，我来到实验室，开始学习 PyTorch。</p>
+</blockquote>
+<p>然后，他删除了最后一个词。</p>
+<p>屏幕变成：</p>
+<blockquote>
+<p>今天，我来到实验室，开始学习 ______</p>
+</blockquote>
+<p>“猜猜下一个词是什么？”</p>
+<p>“PyTorch。”</p>
+<p>教授点头。</p>
+<p>“如果我告诉你，一种语言模型预训练的核心任务，就是反复做这件事呢？”</p>
+<p>林默愣住。</p>
+<p>“你是说……”</p>
+<p>“只需要不断预测下一个 Token？”</p>
+<p>“没错。”</p>
+<p>教授在黑板上写下一个名字：</p>
+<p><strong>GPT</strong></p>
+<p>Generative Pre-trained Transformer</p>
+<p>“今天，我们将亲手制造一个能够生成文字的模型。”</p>
+<h3 id="token">一、语言模型的终极任务：预测下一个 Token</h3>
+<p>教授写下一段文本：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 学习 PyTorch
+</code></pre></div>
+
+<p>假设经过 Tokenizer 后得到：</p>
+<div class="codehilite"><pre><span></span><code>[我, 喜欢, 学习, PyTorch]
+</code></pre></div>
+
+<p>每个 Token 有自己的 ID：</p>
+<div class="codehilite"><pre><span></span><code>我       → 1
+喜欢     → 2
+学习     → 3
+PyTorch  → 4
+</code></pre></div>
+
+<p>于是文本变成：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“然后呢？”</p>
+<p>教授说：</p>
+<p>“如果要让模型学会预测下一个 Token，我们应该怎么构造训练数据？”</p>
+<p>他在黑板上画出：</p>
+<div class="codehilite"><pre><span></span><code>输入：我
+目标：喜欢
+
+输入：我 喜欢
+目标：学习
+
+输入：我 喜欢 学习
+目标：PyTorch
+</code></pre></div>
+
+<p>林默点头。</p>
+<p>“相当于不断向后移动一个位置。”</p>
+<p>“对。”</p>
+<p>这就是：</p>
+<p>Next Token Prediction——下一个 Token 预测。</p>
+<p>数学上，我们希望模型学习：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>∣</mo><msub><mi>x</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>x</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>x</mi><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex"> P(x_t\mid x_1,x_2,\ldots,x_{t-1}) </annotation></semantics></math></span></p>
+<p>意思是：</p>
+<blockquote>
+<p>已经知道前面的 Token，预测下一个 Token 出现的概率。</p>
+</blockquote>
+<p>教授继续：</p>
+<p>“比如当前输入是：”</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 学习
+</code></pre></div>
+
+<p>模型可能输出：</p>
+<div class="codehilite"><pre><span></span><code>PyTorch   0.70
+Java      0.15
+Python    0.10
+其他      0.05
+</code></pre></div>
+
+<p>然后根据这些概率选择下一个 Token。</p>
+<p>这便是文本生成的起点。</p>
+<h3 id="_1">二、最关键的技巧：输入与预测目标错开一格</h3>
+<p>林默开始写代码。</p>
+<p>“教授，难道每句话都要拆成很多训练样本？”</p>
+<div class="codehilite"><pre><span></span><code>[我] → [喜欢]
+
+[我, 喜欢] → [学习]
+
+[我, 喜欢, 学习] → [PyTorch]
+</code></pre></div>
+
+<p>教授摇头。</p>
+<p>“可以这么理解，但实际训练还有更高效的做法。”</p>
+<p>他写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+</code></pre></div>
+
+<p>林默仔细观察。</p>
+<p>“所以 x 和 y 的区别……”</p>
+<p>“就是 y 比 x 向后移动了一个 Token。”</p>
+<p>教授点头。</p>
+<p>Next Token Prediction 的标签构造</p>
+<p>我</p>
+<p>位置 1</p>
+<p>喜欢</p>
+<p>位置 2</p>
+<p>学习</p>
+<p>位置 3</p>
+<p>PyTorch</p>
+<p>位置 4</p>
+<p>。</p>
+<p>位置 5</p>
+<p>输入与目标错位</p>
+<table>
+<thead>
+<tr>
+<th>输入 X</th>
+<th>我</th>
+<th>喜欢</th>
+<th>学习</th>
+<th>PyTorch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>目标 Y</td>
+<td>喜欢</td>
+<td>学习</td>
+<td>PyTorch</td>
+<td>。</td>
+</tr>
+</tbody>
+</table>
+<p>每个输入位置的输出，都被用来预测紧随其后的 Token。</p>
+<p>“这样，我们就可以在一次前向传播中，同时训练多个位置的预测任务。”</p>
+<p>林默突然想起之前学过的 GPU。</p>
+<p>“也就是说，我们可以把整个序列交给 GPU，利用矩阵计算并行训练？”</p>
+<p>“正是如此。”</p>
+<h3 id="_2">三、一个严重问题：模型会不会偷看答案？</h3>
+<p>教授继续写：</p>
+<div class="codehilite"><pre><span></span><code>输入：
+
+我 喜欢 学习 PyTorch
+</code></pre></div>
+
+<p>“假设我们正在训练第一个位置预测‘喜欢’。”</p>
+<p>林默说：</p>
+<p>“模型应该只看到‘我’。”</p>
+<p>“但是，如果使用普通 Self-Attention——”</p>
+<p>林默突然反应过来。</p>
+<div class="codehilite"><pre><span></span><code>我
+│
+├── 可以关注 喜欢
+├── 可以关注 学习
+└── 可以关注 PyTorch
+</code></pre></div>
+
+<p>“那模型直接看到了未来！”</p>
+<p>教授点头。</p>
+<p>“所以 GPT 不能使用毫无限制的双向 Self-Attention。”</p>
+<p>“必须使用——”</p>
+<p><strong>Causal Mask</strong></p>
+<h3 id="causal-mask">四、Causal Mask：禁止偷看未来</h3>
+<p>假设有四个 Token：</p>
+<div class="codehilite"><pre><span></span><code>A B C D
+</code></pre></div>
+
+<p>没有 Mask：</p>
+<div class="codehilite"><pre><span></span><code>A → A B C D
+B → A B C D
+C → A B C D
+D → A B C D
+</code></pre></div>
+
+<p>但是 GPT 的因果注意力要求：</p>
+<div class="codehilite"><pre><span></span><code>A → A
+B → A B
+C → A B C
+D → A B C D
+</code></pre></div>
+
+<p>Causal Attention Mask</p>
+<p>A</p>
+<p>B</p>
+<p>C</p>
+<p>D</p>
+<p>A</p>
+<p>B</p>
+<p>C</p>
+<p>D</p>
+<p>允许关注</p>
+<p>禁止关注未来</p>
+<p>教授说：</p>
+<p>“对于每个位置，模型只能利用当前及之前的 Token 表示。”</p>
+<p>“这样，虽然所有位置的计算可以在训练时并行完成，但每个位置仍然遵守不能看未来的约束。”</p>
+<p>他写出代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">seq_len</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">),</span> <span class="n">diagonal</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>在 <code>nn.MultiheadAttention</code> 中，可以这样使用：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">output</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">attention</span><span class="p">(</span>    <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>    <span class="n">attn_mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>    <span class="n">need_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+<p>这里的 <code>True</code> 表示禁止关注该位置。</p>
+<p>“注意，”教授补充，“PyTorch 不同 Attention API 对布尔 Mask 的约定不完全相同，用时要看具体接口。”</p>
+<h3 id="gpt">五、现在开始建造 GPT</h3>
+<p>教授在黑板上画出真正的架构：</p>
+<div class="codehilite"><pre><span></span><code>输入文本
+              │
+              ▼
+           Tokenizer
+              │
+              ▼
+            Token IDs
+              │
+      ┌───────┴────────┐
+      ▼                ▼
+Token Embedding    Position Embedding
+      │                │
+      └───────┬────────┘
+              ▼
+             相加
+              │
+              ▼
+      Transformer Block 1
+              │
+              ▼
+      Transformer Block 2
+              │
+              ▼
+             ...
+              │
+              ▼
+      Transformer Block N
+              │
+              ▼
+          Final Norm
+              │
+              ▼
+         LM Head
+              │
+              ▼
+           Logits
+              │
+              ▼
+      下一个 Token 概率
+</code></pre></div>
+
+<p>林默盯着：</p>
+<div class="codehilite"><pre><span></span><code>LM Head
+</code></pre></div>
+
+<p>“这又是什么？”</p>
+<p>教授解释：</p>
+<p>“你已经知道 Transformer 输出的是隐藏向量。”</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">hidden_size</span> <span class="o">=</span> <span class="mi">128</span>
+</code></pre></div>
+
+<p>那么每个 Token 的最终表示：</p>
+<div class="codehilite"><pre><span></span><code>[128]
+</code></pre></div>
+
+<p>但词表可能有：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">vocab_size</span> <span class="o">=</span> <span class="mi">10000</span>
+</code></pre></div>
+
+<p>我们需要预测：</p>
+<blockquote>
+<p>这 10000 个 Token 中，下一个究竟是哪一个？</p>
+</blockquote>
+<p>所以需要：</p>
+<div class="codehilite"><pre><span></span><code>nn.Linear(128, 10000)
+</code></pre></div>
+
+<p>也就是：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>L</mi><mi>M</mi><mi>H</mi><mi>e</mi><mi>a</mi><mi>d</mi><mo>:</mo><msup><mi mathvariant="double-struck">R</mi><mn>128</mn></msup><mo>→</mo><msup><mi mathvariant="double-struck">R</mi><mn>10000</mn></msup></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex"> \boxed{LMHead:\mathbb{R}^{128}\rightarrow\mathbb{R}^{10000}} </annotation></semantics></math></span></p>
+<p>它会把隐藏向量投影成词表中所有候选 Token 的分数。</p>
+<p>这些分数仍然叫：</p>
+<p>Logits。</p>
+<h3 id="lm-head-shape">六、LM Head 输出什么 Shape？</h3>
+<p>假设输入：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">seq_len</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">hidden_size</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">vocab_size</span> <span class="o">=</span> <span class="mi">10000</span>
+</code></pre></div>
+
+<p>Transformer 输出：</p>
+<div class="codehilite"><pre><span></span><code>[2, 8, 128]
+</code></pre></div>
+
+<p>经过：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">lm_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+</code></pre></div>
+
+<p>得到：</p>
+<div class="codehilite"><pre><span></span><code>[2, 8, 10000]
+</code></pre></div>
+
+<p>林默看着最后的 <code>10000</code>。</p>
+<p>“也就是说，每个 Token 位置都会预测一次整个词表？”</p>
+<p>“对。”</p>
+<div class="codehilite"><pre><span></span><code>位置 1 → 10000 个 logits
+位置 2 → 10000 个 logits
+位置 3 → 10000 个 logits
+...
+位置 8 → 10000 个 logits
+</code></pre></div>
+
+<p>教授继续：</p>
+<p>“这就是为什么训练时，一次前向传播可以得到整个序列各位置的预测结果。”</p>
+<h3 id="gpt-loss">七、训练 GPT 时，Loss 怎么算？</h3>
+<p>林默很快想起第四章。</p>
+<p>“CrossEntropyLoss？”</p>
+<p>“没错。”</p>
+<p>模型输出：</p>
+<div class="codehilite"><pre><span></span><code>logits:
+
+[B, N, V]
+</code></pre></div>
+
+<p>标签：</p>
+<div class="codehilite"><pre><span></span><code>targets:
+
+[B, N]
+</code></pre></div>
+
+<p>其中：</p>
+<div class="codehilite"><pre><span></span><code>B = Batch Size
+N = Sequence Length
+V = Vocabulary Size
+</code></pre></div>
+
+<p>但普通的：</p>
+<div class="codehilite"><pre><span></span><code>nn.CrossEntropyLoss()
+</code></pre></div>
+
+<p>对于二维分类 logits，通常期望：</p>
+<div class="codehilite"><pre><span></span><code>[样本数量, 类别数量]
+</code></pre></div>
+
+<p>于是我们可以把：</p>
+<div class="codehilite"><pre><span></span><code>[B, N, V]
+</code></pre></div>
+
+<p>变成：</p>
+<div class="codehilite"><pre><span></span><code>[B × N, V]
+</code></pre></div>
+
+<p>标签：</p>
+<div class="codehilite"><pre><span></span><code>[B, N]
+</code></pre></div>
+
+<p>变成：</p>
+<div class="codehilite"><pre><span></span><code>[B × N]
+</code></pre></div>
+
+<p>代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span>    <span class="n">logits</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">),</span>    <span class="n">targets</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+</code></pre></div>
+
+<p>教授强调：</p>
+<p>“这里不用手动 Softmax。”</p>
+<p>林默立刻回答：</p>
+<p>“因为 CrossEntropyLoss 接收原始 logits。”</p>
+<p>“很好。”</p>
+<h3 id="pytorch-mini-gpt">八、真正动手：用 PyTorch 制造 Mini-GPT</h3>
+<p>教授关闭黑板。</p>
+<p>“现在我们要把前十章的知识全部用起来。”</p>
+<p>“这次不只是一个 Transformer Block。”</p>
+<p>“而是一个具备以下能力的完整教学模型。”</p>
+<ul>
+<li>字符级 Tokenizer</li>
+<li>Token Embedding 与 Position Embedding</li>
+<li>Causal Multi-Head Attention</li>
+<li>Transformer Block</li>
+<li>LM Head</li>
+<li>Next Token Prediction</li>
+<li>CrossEntropyLoss</li>
+<li>AdamW 训练</li>
+<li>自回归文本生成</li>
+</ul>
+<p>“为了让代码可以在普通电脑上运行，我们使用非常小的模型。”</p>
+<p>“注意，这个模型只是教学示例，不可能达到真正大语言模型的能力。”</p>
+<h4 id="1">1. 准备文本</h4>
+<p>假设我们有一段训练语料：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;林默走进实验室。教授正在研究PyTorch。神经网络正在学习语言。林默问教授，Transformer为什么能够生成文本？教授回答，因为模型能够预测下一个Token。&#39;</span>
+</code></pre></div>
+
+<p>真实大模型会使用海量文本。</p>
+<p>但我们先让模型学习这段小语料。</p>
+<p>为了演示方便，今天使用字符级 Tokenizer。</p>
+<p>也就是：</p>
+<div class="codehilite"><pre><span></span><code>一个字符 → 一个 Token
+</code></pre></div>
+
+<p>这比真正 LLM 使用的子词 Tokenizer 简单得多，但不影响我们学习模型结构。</p>
+<h4 id="2">2. 建立词表</h4>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="n">chars</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+<span class="n">vocab_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+<span class="n">stoi</span> <span class="o">=</span> <span class="p">{</span><span class="n">ch</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chars</span><span class="p">)}</span>
+<span class="n">itos</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">stoi</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“<code>stoi</code> 和 <code>itos</code> 是什么？”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>stoi：
+
+String → Integer
+
+
+itos：
+
+Integer → String
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>&quot;林&quot; → 12
+&quot;默&quot; → 28
+&quot;教&quot; → 17
+</code></pre></div>
+
+<p>具体 ID 由词表排序决定。</p>
+<p>编码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">stoi</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]</span>
+</code></pre></div>
+
+<p>解码：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="n">ids</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">itos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“这样，文本就可以在字符与整数之间转换。”</p>
+<h4 id="3">3. 准备训练数据</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>    <span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>    <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+</code></pre></div>
+
+<p>然后设置：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">block_size</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">16</span>
+</code></pre></div>
+
+<p>教授解释：</p>
+<div class="codehilite"><pre><span></span><code>block_size
+→ 每个训练样本的输入 Token 数量
+
+batch_size
+→ 每次训练取多少个序列片段
+</code></pre></div>
+
+<p>编写批次生成函数：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_batch</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">block_size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;语料至少需要 block_size + 1 个 Token&quot;</span><span class="p">)</span>
+    <span class="n">starts</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">block_size</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,))</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">block_size</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">block_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+</code></pre></div>
+
+<p>林默观察：</p>
+<div class="codehilite"><pre><span></span><code>x：
+
+[B, 32]
+
+
+y：
+
+[B, 32]
+</code></pre></div>
+
+<p>两个 Tensor 形状相同。</p>
+<p>只是目标向后错了一位。</p>
+<p>这里随机抽取片段用于教学；大型预训练的数据流水线通常要复杂得多。</p>
+<h4 id="4-transformer-block">4. 构建 Transformer Block</h4>
+<p>我们继续使用上一章的 Pre-Norm 结构，但加入因果 Mask。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">TransformerBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_model</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">d_model</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">d_model</span><span class="p">,</span> <span class="n">d_model</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">causal_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">),</span> <span class="n">diagonal</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ln1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">attn_mask</span><span class="o">=</span><span class="n">causal_mask</span><span class="p">,</span> <span class="n">need_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">out</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</code></pre></div>
+
+<p>教授指着：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“这里就是序列长度。”</p>
+<p>“为什么每次都根据 x 取？”</p>
+<p>林默回答：</p>
+<p>“因为训练和生成时，输入序列长度可能不同。”</p>
+<p>“对。”</p>
+<h4 id="5-mini-gpt">5. 构建 Mini-GPT</h4>
+<p>终于到了核心代码。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span> <span class="nc">MiniGPT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">d_model</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                 <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">32</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">block_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">d_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position_embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">d_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+            <span class="n">TransformerBlock</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">T</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Sequence length must be in [1, block_size]&#39;</span><span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">idx</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_embedding</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_embedding</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">targets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># targets are ALREADY shifted by get_batch; do not shift twice.</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">targets</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span>
+</code></pre></div>
+
+<p>林默沉默了。</p>
+<p>这是他第一次真正看到：</p>
+<blockquote>
+<p>一个从 Token ID 开始，一直到整个词表预测结果的完整语言模型。</p>
+</blockquote>
+<p>教授问：</p>
+<p>“这段代码，有没有看不懂的？”</p>
+<p>林默指着：</p>
+<div class="codehilite"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">TransformerBlock</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span><span class="p">)])</span>
+</code></pre></div>
+
+<p>“这里的 <code>*</code> 是什么？”</p>
+<p>教授解释：</p>
+<p>“Python 的参数解包语法。”</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">layers</span> <span class="o">=</span> <span class="p">[</span>    <span class="n">TransformerBlock</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>    <span class="n">TransformerBlock</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
+</code></pre></div>
+
+<p>使用：</p>
+<div class="codehilite"><pre><span></span><code>nn.Sequential(*layers)
+</code></pre></div>
+
+<p>等价于把这些层依次传给 <code>nn.Sequential</code>。</p>
+<p>所以我们就能轻松控制：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">num_layers</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">num_layers</span> <span class="o">=</span> <span class="mi">6</span>
+
+<span class="n">num_layers</span> <span class="o">=</span> <span class="mi">12</span>
+</code></pre></div>
+
+<h3 id="mini-gpt-tensor">九、Mini-GPT 的每个 Tensor 形状</h3>
+<p>教授说：</p>
+<p>“现在先不要运行。”</p>
+<p>“我们从头到尾推一次 Shape。”</p>
+<p>假设：</p>
+<div class="codehilite"><pre><span></span><code>Batch Size = 16
+Sequence Length = 32
+Hidden Size = 64
+Vocabulary Size = V
+</code></pre></div>
+
+<p>Mini-GPT 前向传播 Shape 流动</p>
+<table>
+<thead>
+<tr>
+<th>Token IDs</th>
+<th><code>[16, 32]</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token Embedding</td>
+<td><code>[16, 32, 64]</code></td>
+</tr>
+<tr>
+<td>Position Embedding</td>
+<td><code>[32, 64]</code></td>
+</tr>
+<tr>
+<td>相加（广播）</td>
+<td><code>[16, 32, 64]</code></td>
+</tr>
+<tr>
+<td>Transformer Blocks</td>
+<td><code>[16, 32, 64]</code></td>
+</tr>
+<tr>
+<td>Final LayerNorm</td>
+<td><code>[16, 32, 64]</code></td>
+</tr>
+<tr>
+<td>LM Head</td>
+<td><code>[16, 32, V]</code></td>
+</tr>
+<tr>
+<td>CrossEntropy 输入</td>
+<td><code>[512, V]</code></td>
+</tr>
+</tbody>
+</table>
+<p>林默看着：</p>
+<div class="codehilite"><pre><span></span><code>[16, 32, V]
+</code></pre></div>
+
+<p>问：</p>
+<p>“那是不是一批有 16 条序列，每条 32 个位置，每个位置都预测 V 个候选 Token？”</p>
+<p>教授点头。</p>
+<p>“正确。”</p>
+<p>“这也是训练能够高效利用 GPU 的关键之一。”</p>
+<h3 id="_3">十、让模型真正训练起来</h3>
+<p>现在开始创建模型。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">MiniGPT</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">d_model</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</code></pre></div>
+
+<p>优化器：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span>    <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>    <span class="n">lr</span><span class="o">=</span><span class="mf">3e-4</span><span class="p">)</span>
+</code></pre></div>
+
+<p>训练：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">get_batch</span><span class="p">()</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>林默看着整套训练过程。</p>
+<p>“原来训练 GPT 和第一章的训练循环，本质没有变。”</p>
+<p>教授点头。</p>
+<p>第一章：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 对比前几章的一般分类模型写法（非 MiniGPT 接口）：</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>今天：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</code></pre></div>
+
+<p>核心仍然是：</p>
+<div class="codehilite"><pre><span></span><code>Forward
+    ↓
+Loss
+    ↓
+Backward
+    ↓
+Optimizer
+</code></pre></div>
+
+<p>变化的只是模型结构和训练目标。</p>
+<p>教授提醒：“由于语料极少，这个模型很容易记住训练文本，不能据此认为它具有真实的大规模语言理解能力。”</p>
+<h3 id="_4">十一、训练完了，为什么还不会自动生成文本？</h3>
+<p>林默兴奋地运行：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+
+<p>屏幕上出现：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">V</span><span class="p">])</span>
+</code></pre></div>
+
+<p>他愣住。</p>
+<p>“怎么还是一堆数字？”</p>
+<p>教授问：</p>
+<p>“你希望模型输出什么？”</p>
+<p>“文本。”</p>
+<p>“但模型只负责计算 logits。”</p>
+<p>“你需要自己建立一个生成循环。”</p>
+<p>他写下：</p>
+<p><strong>Autoregressive Generation</strong></p>
+<p>自回归生成。</p>
+<h3 id="_5">十二、生成的第一步：只看最后一个位置</h3>
+<p>假设输入：</p>
+<div class="codehilite"><pre><span></span><code>林默走进
+</code></pre></div>
+
+<p>Token IDs：</p>
+<div class="codehilite"><pre><span></span><code>[12, 28, 7, 35]
+</code></pre></div>
+
+<p>模型前向传播：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+</code></pre></div>
+
+<p>输出：</p>
+<div class="codehilite"><pre><span></span><code>[1, 4, V]
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“为什么预测结果有四个位置？”</p>
+<p>教授回答：</p>
+<p>“因为模型对输入中的每个位置，都产生了预测下一个 Token 的 logits。”</p>
+<p>但现在我们要继续生成文本。</p>
+<p>所以只需要：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">last_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+</code></pre></div>
+
+<p>形状：</p>
+<div class="codehilite"><pre><span></span><code>[1, V]
+</code></pre></div>
+
+<p>这代表：</p>
+<blockquote>
+<p>基于目前整段上下文，预测紧随其后的下一个 Token。</p>
+</blockquote>
+<h3 id="logits-token">十三、怎么从 Logits 选择一个 Token？</h3>
+<p>教授给出：</p>
+<div class="codehilite"><pre><span></span><code>模型预测：
+
+实验室  3.2
+教室    2.8
+医院    1.1
+广场    0.7
+</code></pre></div>
+
+<p>林默说：</p>
+<p>“直接取最大值？”</p>
+<div class="codehilite"><pre><span></span><code><span class="n">next_token</span> <span class="o">=</span> <span class="n">last_logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>教授点头。</p>
+<p>“这叫 Greedy Decoding。”</p>
+<p>即：</p>
+<blockquote>
+<p>每次选择当前概率最高的 Token。</p>
+</blockquote>
+<p>但问题来了。</p>
+<p>“如果每次都选最大值，会怎样？”</p>
+<p>林默想了想。</p>
+<p>“生成结果会比较固定？”</p>
+<p>“对。”</p>
+<p>而且贪心策略并不保证生成整段文本的联合概率最高。</p>
+<p>它只是在每一个局部步骤做最大值选择。</p>
+<p>所以现代语言模型经常使用：</p>
+<blockquote>
+<p>Sampling——采样。</p>
+</blockquote>
+<h3 id="sampling-token">十四、Sampling：按概率抽取下一个 Token</h3>
+<p>假设 Softmax 后：</p>
+<div class="codehilite"><pre><span></span><code>实验室  0.60
+教室    0.25
+医院    0.10
+广场    0.05
+</code></pre></div>
+
+<p>不是直接选择：</p>
+<div class="codehilite"><pre><span></span><code>实验室
+</code></pre></div>
+
+<p>而是按这些概率随机抽取。</p>
+<p>因此：</p>
+<div class="codehilite"><pre><span></span><code>第一次生成：
+实验室
+
+第二次生成：
+实验室
+
+第三次生成：
+教室
+</code></pre></div>
+
+<p>不同运行可能得到不同结果。</p>
+<p>代码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">last_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">next_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>林默盯着：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">()</span>
+</code></pre></div>
+
+<p>“这就是按照概率抽样？”</p>
+<p>“对。”</p>
+<h3 id="temperature">十五、Temperature：控制生成有多随机</h3>
+<p>教授又写：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">temperature</span> <span class="o">=</span> <span class="mf">1.0</span>
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span> <span class="o">/</span> <span class="n">temperature</span>
+</code></pre></div>
+
+<p>林默想起 Attention 中的缩放。</p>
+<p>“又是除法？”</p>
+<p>教授点头。</p>
+<p>“但这次目的不同。”</p>
+<p>Temperature 控制的是：</p>
+<blockquote>
+<p>采样概率分布的尖锐程度。</p>
+</blockquote>
+<p>公式：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mi>i</mi></msub><mo>=</mo><mfrac><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>i</mi></msub><mi mathvariant="normal">/</mi><mi>T</mi></mrow></msup><mrow><munder><mo>∑</mo><mi>j</mi></munder><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>j</mi></msub><mi mathvariant="normal">/</mi><mi>T</mi></mrow></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex"> P_i= \frac{e^{z_i/T}} {\sum_j e^{z_j/T}} </annotation></semantics></math></span></p>
+<p>其中：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>T</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex"> T&gt;0 </annotation></semantics></math></span></p>
+<p>温度越低：</p>
+<div class="codehilite"><pre><span></span><code>概率越集中于高 logit 的 Token
+</code></pre></div>
+
+<p>温度越高：</p>
+<div class="codehilite"><pre><span></span><code>概率分布越平缓
+</code></pre></div>
+
+<p>假设 logits：</p>
+<div class="codehilite"><pre><span></span><code>[3, 2, 1]
+</code></pre></div>
+
+<p>Temperature 采样实验</p>
+<p>T = 1.0</p>
+<p>低随机性</p>
+<p>1.0</p>
+<p>高随机性</p>
+<p>实验室</p>
+<p>66.5%</p>
+<p>教室</p>
+<p>24.5%</p>
+<p>医院</p>
+<p>9.0%</p>
+<p>拖动温度，观察相同 logits 如何产生不同的采样概率。T 趋近 0 时越来越接近贪心选择。</p>
+<p>林默发现：</p>
+<p>“所以 Temperature 不改变模型参数。”</p>
+<p>“只是改变生成时的概率分布？”</p>
+<p>教授点头。</p>
+<p>“它是推理解码策略的一部分。”</p>
+<h3 id="top-k-k">十六、Top-k：只允许最有希望的 k 个候选参与</h3>
+<p>教授继续：</p>
+<p>“假设词表有 100000 个 Token。”</p>
+<p>“你真的希望每次生成时，所有 Token 都有机会被采样吗？”</p>
+<p>林默摇头。</p>
+<p>“那些概率极小的 Token，可能生成奇怪文本。”</p>
+<p>“所以可以使用 Top-k。”</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>Top-k = 3
+</code></pre></div>
+
+<p>原始概率：</p>
+<div class="codehilite"><pre><span></span><code>A  0.50
+B  0.25
+C  0.15
+D  0.06
+E  0.04
+</code></pre></div>
+
+<p>只保留：</p>
+<div class="codehilite"><pre><span></span><code>A
+B
+C
+</code></pre></div>
+
+<p>其他候选：</p>
+<div class="codehilite"><pre><span></span><code>D、E
+</code></pre></div>
+
+<p>直接排除。</p>
+<p>然后对保留下来的概率重新归一化。</p>
+<p>PyTorch：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">values</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+<span class="n">threshold</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">logits</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>之后 Softmax，低于阈值的 Token 就不会被采样。</p>
+<h3 id="top-p">十七、Top-p：候选数量不固定</h3>
+<p>林默问：</p>
+<p>“Top-k 只保留固定数量，是不是有点死板？”</p>
+<p>教授点头。</p>
+<p>于是出现：</p>
+<p><strong>Top-p / Nucleus Sampling</strong></p>
+<p>它不固定候选 Token 数量。</p>
+<p>而是选择概率最高的一组 Token，使累计概率达到设定阈值。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">top_p</span> <span class="o">=</span> <span class="mf">0.9</span>
+</code></pre></div>
+
+<p>概率排序：</p>
+<div class="codehilite"><pre><span></span><code>A  0.50  累计 0.50
+B  0.25  累计 0.75
+C  0.15  累计 0.90
+D  0.06  累计 0.96
+E  0.04  累计 1.00
+</code></pre></div>
+
+<p>那么可以保留：</p>
+<div class="codehilite"><pre><span></span><code>A、B、C
+</code></pre></div>
+
+<p>因为累计概率已经达到：</p>
+<div class="codehilite"><pre><span></span><code>0.90
+</code></pre></div>
+
+<p>教授说：</p>
+<p>“当模型很确定时，可能只需要几个候选。”</p>
+<p>“当模型不确定时，可能需要更多候选。”</p>
+<p>这就是 Top-p 相比固定 Top-k 的一个特点。</p>
+<h3 id="_6">十八、完成文本生成函数</h3>
+<p>教授说：</p>
+<p>“我们先实现一个最简单的采样版本，不使用 Top-k 和 Top-p。”</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">temperature</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">top_p</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Require temperature &gt; 0 and 0 &lt; top_p &lt;= 1&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">top_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">top_k</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;top_k must be positive&#39;</span><span class="p">)</span>
+    <span class="n">was_training</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">training</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_new_tokens</span><span class="p">):</span>
+            <span class="n">idx_cond</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[:,</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">block_size</span><span class="p">:]</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">idx_cond</span><span class="p">)</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="n">temperature</span>
+            <span class="k">if</span> <span class="n">top_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">threshold</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">top_k</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">values</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">logits</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">top_p</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">sorted_logits</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">descending</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">cumulative</span> <span class="o">=</span> <span class="n">sorted_logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="n">cumulative</span> <span class="o">&gt;</span> <span class="n">top_p</span>
+                <span class="c1"># Keep the first token crossing the threshold, including top-1.</span>
+                <span class="n">remove</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">remove</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+                <span class="n">remove</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">sorted_logits</span> <span class="o">=</span> <span class="n">sorted_logits</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">remove</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+                <span class="n">logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">sorted_logits</span><span class="p">)</span>
+            <span class="n">next_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">idx</span><span class="p">,</span> <span class="n">next_token</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">was_training</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">idx</span>
+</code></pre></div>
+
+<p>林默看向：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>    <span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">next_token</span><span class="p">],</span>    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<p>“每轮把生成的 Token 拼回输入。”</p>
+<p>“下一轮继续预测。”</p>
+<p>“这就是自回归？”</p>
+<p>“没错。”</p>
+<h3 id="_7">十九、生成第一段文本</h3>
+<p>现在模型已经训练好了。</p>
+<p>假设输入：</p>
+<div class="codehilite"><pre><span></span><code>林默
+</code></pre></div>
+
+<p>编码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">start_ids</span> <span class="o">=</span> <span class="n">encode</span><span class="p">(</span><span class="s2">&quot;林默&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>转换成 Tensor：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">context</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>    <span class="p">[</span><span class="n">start_ids</span><span class="p">],</span>    <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+</code></pre></div>
+
+<p>执行：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">generated</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</code></pre></div>
+
+<p>解码：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">output_text</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">generated</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output_text</span><span class="p">)</span>
+</code></pre></div>
+
+<p>可能输出：</p>
+<div class="codehilite"><pre><span></span><code>林默走进实验室。教授正在研究PyTorch。
+</code></pre></div>
+
+<p>也可能输出不连贯的文字。</p>
+<p>教授提醒：</p>
+<p>“由于训练语料非常少，而且这里只是一个微型模型，生成结果可能重复、混乱或者只是机械记忆训练文本。”</p>
+<p>“如果训练数据规模和模型能力不足，不要期待它能真正理解复杂问题。”</p>
+<h3 id="token_1">二十、一个更深的问题：为什么生成时只预测一个 Token？</h3>
+<p>林默问：</p>
+<p>“教授，既然训练时能同时预测整个序列，为什么生成时不能一次生成 100 个 Token？”</p>
+<p>教授在黑板上写：</p>
+<div class="codehilite"><pre><span></span><code>训练：
+
+已知完整序列
+</code></pre></div>
+
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢 学习 PyTorch
+</code></pre></div>
+
+<p>我们已经知道每个位置的真实 Token。</p>
+<p>所以：</p>
+<div class="codehilite"><pre><span></span><code>位置 1
+位置 2
+位置 3
+位置 4
+</code></pre></div>
+
+<p>可以并行计算对应的下一 Token 预测。</p>
+<p>但是生成时：</p>
+<div class="codehilite"><pre><span></span><code>我 喜欢
+</code></pre></div>
+
+<p>下一 Token 未知。</p>
+<p>假设先生成：</p>
+<div class="codehilite"><pre><span></span><code>学习
+</code></pre></div>
+
+<p>才能继续预测：</p>
+<div class="codehilite"><pre><span></span><code>PyTorch
+</code></pre></div>
+
+<p>因此：</p>
+<div class="codehilite"><pre><span></span><code>生成第 3 个 Token
+依赖第 2 个 Token
+
+生成第 4 个 Token
+依赖第 3 个 Token
+</code></pre></div>
+
+<p>形成顺序依赖。</p>
+<p>教授说：</p>
+<p>“这就是为什么自回归语言模型的训练并行性很强，但逐 Token 解码仍有明显的顺序瓶颈。”</p>
+<p>当然，实际系统可以通过推测解码等技术优化，不代表所有生成技术都严格采用一次只计算一个 Token 的简单方式。</p>
+<h3 id="_8">二十一、如果每次都重新计算全部上下文，会发生什么？</h3>
+<p>林默仔细研究生成函数：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">idx_cond</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[:,</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">block_size</span><span class="p">:]</span>
+</code></pre></div>
+
+<p>然后：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">idx_cond</span><span class="p">)</span>
+</code></pre></div>
+
+<p>他发现了一个问题。</p>
+<p>“教授，我们每生成一个新 Token，都重新计算之前的 Token？”</p>
+<p>“这个教学版本是的。”</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>第 1 步：
+
+A B C
+</code></pre></div>
+
+<p>执行 Attention。</p>
+<p>下一步：</p>
+<div class="codehilite"><pre><span></span><code>A B C D
+</code></pre></div>
+
+<p>又执行 Attention。</p>
+<p>再下一步：</p>
+<div class="codehilite"><pre><span></span><code>A B C D E
+</code></pre></div>
+
+<p>继续执行。</p>
+<p>林默皱眉。</p>
+<p>“那 A、B、C 不是被重复计算了？”</p>
+<p>教授点头。</p>
+<p>“这就是这个简单生成器最大的性能问题之一。”</p>
+<p>“真正的大模型推理系统，不会这么浪费。”</p>
+<p>教授在黑板上写下：</p>
+<p><strong>KV Cache</strong></p>
+<h3 id="kv-cache">二十二、KV Cache：把过去的计算结果保存起来</h3>
+<p>教授回顾上一章：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Q</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>Q</mi></msub></mrow><annotation encoding="application/x-tex"> Q=XW_Q </annotation></semantics></math></span></p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>K</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>K</mi></msub></mrow><annotation encoding="application/x-tex"> K=XW_K </annotation></semantics></math></span></p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>V</mi><mo>=</mo><mi>X</mi><msub><mi>W</mi><mi>V</mi></msub></mrow><annotation encoding="application/x-tex"> V=XW_V </annotation></semantics></math></span></p>
+<p>在自回归推理中，新 Token 需要关注之前的 Token。</p>
+<p>对于此前已经计算过的 Token，它们在某一层的 Key 和 Value 可以缓存起来。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>已经生成：
+
+A B C
+</code></pre></div>
+
+<p>保存：</p>
+<div class="codehilite"><pre><span></span><code>K_A
+K_B
+K_C
+
+V_A
+V_B
+V_C
+</code></pre></div>
+
+<p>下一步生成 D：</p>
+<div class="codehilite"><pre><span></span><code>只需要计算新 Token 的相关投影
+</code></pre></div>
+
+<p>然后把新的 K、V 加入缓存。</p>
+<div class="codehilite"><pre><span></span><code>KV Cache
+
+┌──────────────────────────┐
+│ K_A  K_B  K_C  K_D      │
+│ V_A  V_B  V_C  V_D      │
+└──────────────────────────┘
+</code></pre></div>
+
+<p>后续新 Query 就可以关注这些历史 K/V。</p>
+<p>林默突然意识到：</p>
+<p>“所以不用每次重新计算历史 Token 的所有 Attention 投影。”</p>
+<p>“对。”</p>
+<p>不过教授强调：</p>
+<p>“KV Cache 不是把所有计算成本都消灭了。”</p>
+<p>“新 Token 仍然需要和已有 Key 计算 Attention，而且缓存本身占用显存。”</p>
+<p>“随着上下文长度增加，KV Cache 也会增长。”</p>
+<h3 id="prefill-decode">二十三、Prefill 与 Decode</h3>
+<p>教授在黑板上写两个阶段。</p>
+<div class="codehilite"><pre><span></span><code>Prefill
+
+Decode
+</code></pre></div>
+
+<p>林默问：</p>
+<p>“这又是什么？”</p>
+<p>教授回答：</p>
+<p>“这是现代 LLM 推理工程里非常重要的两个阶段。”</p>
+<p><strong>Prefill 阶段</strong></p>
+<p>用户输入：</p>
+<div class="codehilite"><pre><span></span><code>请解释一下 PyTorch 的自动求导机制。
+</code></pre></div>
+
+<p>假设 Tokenizer 生成：</p>
+<div class="codehilite"><pre><span></span><code>100 个 Token
+</code></pre></div>
+
+<p>模型需要处理这 100 个 Token，建立它们的上下文表示和各层 KV Cache。</p>
+<p>这一阶段：</p>
+<div class="codehilite"><pre><span></span><code>输入 Prompt
+     ↓
+批量处理 Prompt Token
+     ↓
+建立 KV Cache
+     ↓
+预测第一个新 Token
+</code></pre></div>
+
+<p>通常称为：</p>
+<p>Prefill。</p>
+<p><strong>Decode 阶段</strong></p>
+<p>开始生成：</p>
+<div class="codehilite"><pre><span></span><code>第 1 个 Token
+第 2 个 Token
+第 3 个 Token
+...
+</code></pre></div>
+
+<p>借助 KV Cache，通常只需要处理新加入的 Token，而不用把整个前缀从头经过每一层。</p>
+<p>这一阶段叫：</p>
+<p>Decode。</p>
+<h3 id="prefill-decode_1">二十四、为什么 Prefill 和 Decode 的性能瓶颈不同？</h3>
+<p>教授继续。</p>
+<p>“Prefill 处理较长的输入序列，通常有较大的矩阵计算量。”</p>
+<p>“Decode 每一步只增加少量 Token，却需要读取大量模型权重和 KV Cache。”</p>
+<p>因此在实际硬件与批处理配置下，经常出现：</p>
+<div class="codehilite"><pre><span></span><code>Prefill
+→ 更容易利用大规模并行计算
+→ 计算吞吐是重要因素
+
+Decode
+→ 单步计算规模较小
+→ 内存带宽和访存成本常常成为重要瓶颈
+</code></pre></div>
+
+<p>不过这不是绝对定律，模型规模、Batch Size、序列长度、硬件和实现方式都会影响瓶颈。</p>
+<p>林默点头。</p>
+<p>“所以模型推理优化，并不只是换一张更强的显卡。”</p>
+<p>教授说：</p>
+<p>“还涉及 KV Cache、量化、批处理、Attention Kernel、并行策略。”</p>
+<h3 id="gpt_1">二十五、现在才真正理解 GPT 的名字</h3>
+<p>教授重新写下：</p>
+<p><strong>GPT</strong></p>
+<p>Generative Pre-trained Transformer</p>
+<p>林默开始逐个拆解。</p>
+<p>Generative——生成式</p>
+<p>模型能够根据已有上下文，逐步生成新的 Token。</p>
+<p>Pre-trained——预训练</p>
+<p>模型先在大量文本上进行训练，学习语言和知识中的统计规律。</p>
+<p>Transformer——模型架构</p>
+<p>使用基于 Attention 的 Transformer 架构。</p>
+<p>教授补充：</p>
+<p>“GPT 系列属于 Decoder-Only 自回归 Transformer 模型的代表。”</p>
+<p>“但不是所有生成模型都使用完全相同的结构，也不是所有 Transformer 都是 GPT。”</p>
+<h3 id="token_2">二十六、但一个会预测 Token 的模型，为什么还能回答问题？</h3>
+<p>林默仍然不满足。</p>
+<p>“教授，预测下一个 Token，我已经懂了。”</p>
+<p>“但如果我问：”</p>
+<blockquote>
+<p>Java HashMap 为什么线程不安全？</p>
+</blockquote>
+<p>“模型为什么能回答这种技术问题？”</p>
+<p>教授没有直接回答。</p>
+<p>他写：</p>
+<div class="codehilite"><pre><span></span><code>训练文本中可能存在：
+
+HashMap 在并发修改时……
+</code></pre></div>
+
+<p>“如果模型在海量数据中学习过大量有关 Java、并发、集合、系统设计的内容，它就可能掌握这些文本模式和部分相关知识。”</p>
+<p>“当你输入一个问题时，模型会根据上下文预测可能的后续回答。”</p>
+<p>林默问：</p>
+<p>“所以它只是在记住文字？”</p>
+<p>教授摇头。</p>
+<p>“不能简单这么说。”</p>
+<p>“模型不仅可能记忆训练片段，也可能通过参数学习到更一般的统计结构、概念关联和可迁移的计算模式。”</p>
+<p>“但也不能因此认为它一定真正理解了所有问题。”</p>
+<p>教授写：</p>
+<div class="codehilite"><pre><span></span><code>Next Token Prediction
+         │
+         ▼
+学习语言结构
+         │
+         ▼
+学习概念关联与模式
+         │
+         ▼
+形成一定的泛化能力
+         │
+         ▼
+可能执行问答、总结、翻译、代码生成等任务
+</code></pre></div>
+
+<p>“至于为什么这些能力会出现，以及模型如何通过后训练变得更善于遵循指令，是更深入的问题。”</p>
+<h3 id="sft">二十七、预训练模型为什么还需要 SFT？</h3>
+<p>林默突然想到自己做过的 Coding Agent。</p>
+<p>“教授，ChatGPT 这种模型不是专门按照用户指令回答问题吗？”</p>
+<p>“但预训练只是预测下一个 Token。”</p>
+<p>“那它为什么知道应该当一个助手？”</p>
+<p>教授点头。</p>
+<p>“这就涉及另一个阶段。”</p>
+<p><strong>Post-training</strong></p>
+<p>也就是预训练之后的训练。</p>
+<p>其中一个重要方法是：</p>
+<p>SFT——Supervised Fine-Tuning，监督微调。</p>
+<p>例如：</p>
+<div class="codehilite"><pre><span></span><code>用户：
+解释一下 Java ThreadLocal。
+
+助手：
+ThreadLocal 为每个线程提供……
+</code></pre></div>
+
+<p>模型在大量这样的指令与回答数据上继续训练。</p>
+<p>它逐渐学习：</p>
+<div class="codehilite"><pre><span></span><code>看到用户问题
+    ↓
+按照指令
+    ↓
+生成符合要求的回答
+</code></pre></div>
+
+<p>教授补充：</p>
+<p>“现代模型后训练还可能涉及偏好优化、奖励建模、强化学习等方法。”</p>
+<p>“但 SFT 是理解指令微调的一个很好的起点。”</p>
+<h3 id="_9">二十八、林默突然把所有知识连接起来了</h3>
+<p>他站在黑板前，写下了今天最终的系统结构：</p>
+<div class="codehilite"><pre><span></span><code>大规模文本语料
+        │
+        ▼
+    Tokenizer
+        │
+        ▼
+    Token IDs
+        │
+        ▼
+ 构造 x / target
+        │
+        ▼
+ Token Embedding
+        │
+        ▼
+Position Embedding
+        │
+        ▼
+Transformer Blocks
+        │
+        ▼
+      LM Head
+        │
+        ▼
+     Logits
+        │
+        ▼
+CrossEntropyLoss
+        │
+        ▼
+    backward()
+        │
+        ▼
+     AdamW
+        │
+        ▼
+    参数更新
+        │
+        ▼
+     预训练模型
+        │
+        ▼
+    SFT / 后训练
+        │
+        ▼
+     助手模型
+        │
+        ▼
+     推理服务
+        │
+        ▼
+Prefill + Decode
+        │
+        ▼
+KV Cache + Sampling
+        │
+        ▼
+     生成文本
+</code></pre></div>
+
+<p>教授看着这张图。</p>
+<p>“你现在终于可以回答一个问题了。”</p>
+<p>“什么问题？”</p>
+<p>“一个 LLM 从训练数据到最终生成回答，究竟经历了什么？”</p>
+<p>林默沉默了一会儿。</p>
+<p>然后回答：</p>
+<p>“首先把文本 Tokenize 成整数 ID。”</p>
+<p>“通过 Embedding 转成向量。”</p>
+<p>“利用带因果约束的 Transformer，对每个位置建立上下文表示。”</p>
+<p>“通过 LM Head 预测词表 logits。”</p>
+<p>“用错位的下一 Token 标签和 CrossEntropyLoss 训练，再用 Autograd 与优化器更新参数。”</p>
+<p>“训练完成后，可以通过后训练增强指令遵循能力。”</p>
+<p>“推理时从 Prompt 开始，不断预测和选择新 Token，并通过 KV Cache 避免大量重复计算。”</p>
+<p>教授点头。</p>
+<p>“这就是一条完整的 LLM 技术主线。”</p>
+<h3 id="_10">二十九、今天的五道思考题</h3>
+<p>Mini-GPT 理解测试</p>
+<p>1. 为什么 GPT 训练时可以同时预测多个位置？</p>
+<p>因为模型可以提前知道自己会生成什么</p>
+<p>因为真实 Token 序列已知，使用 Causal Mask 后可并行计算各位置</p>
+<p>因为训练时不需要 Attention</p>
+<p>2. LM Head 的主要作用是什么？</p>
+<p>把隐藏向量映射成词表大小的 logits</p>
+<p>把文字分割成 Token</p>
+<p>缓存过去的 K 和 V</p>
+<p>3. Temperature 降低通常会造成什么效果？</p>
+<p>增加模型参数量</p>
+<p>让概率分布更平缓</p>
+<p>让高概率 Token 更占优势</p>
+<p>4. KV Cache 主要缓存什么？</p>
+<p>过去每个位置的最终生成概率</p>
+<p>历史 Token 各层 Attention 的 Key 和 Value</p>
+<p>模型所有梯度</p>
+<p>5. 为什么简单的自回归推理不能像训练一样，一次确定所有未来 Token？</p>
+<p>因为未来 Token 尚未知，后续生成依赖前面生成结果</p>
+<p>因为 GPU 不支持矩阵乘法</p>
+<p>因为推理时不允许使用 Softmax</p>
+<details class="answers">
+<summary>展开本章五道题的参考答案</summary>
+<ol>
+<li>
+<p>真实序列已知，因果掩码允许并行计算各位置；标签仍来自下一个 Token。</p>
+</li>
+<li>
+<p>LM Head 把隐藏向量映射成词表大小的 logits。</p>
+</li>
+<li>
+<p>在相同 logits 下，较低的正温度让高概率 Token 更占优势。</p>
+</li>
+<li>
+<p>KV Cache 缓存历史 Token 在各层 Attention 的 Key 和 Value，不缓存梯度。</p>
+</li>
+<li>
+<p>未来 Token 尚未知，普通自回归生成的后续决策依赖已生成内容。</p>
+</li>
+</ol>
+</details></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-10.html">← 上一章<span>深渊中的通天塔</span></a><a href="chapter-12.html">下一章 →<span>显存里的战争</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>

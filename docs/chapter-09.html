@@ -1,35 +1,57 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>所有词都在互相打量 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
-<body data-chapter="9"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
-<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>所有词都在互相打量 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="9" data-chapter-count="13"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
 <ul>
+<li><a href="#attention">Attention</a></li>
 <li><a href="#attention_1">一、Attention 最朴素的想法</a></li>
 <li><a href="#self-attention-self">二、Self-Attention 为什么叫“Self”</a></li>
 <li><a href="#_1">三、但模型怎么知道“该关注谁”？</a></li>
-<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a></li>
-<li><a href="#key">五、Key 是什么？</a></li>
-<li><a href="#v">六、那 V 又是什么？</a></li>
+<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a><ul>
+<li><a href="#query">Query</a></li>
+</ul>
+</li>
+<li><a href="#key">五、Key 是什么？</a><ul>
+<li><a href="#key_1">Key</a></li>
+</ul>
+</li>
+<li><a href="#v">六、那 V 又是什么？</a><ul>
+<li><a href="#value">Value</a></li>
+</ul>
+</li>
 <li><a href="#_2">七、一个生活化比喻</a></li>
 <li><a href="#qkv_1">八、Q、K、V 是怎么来的？</a></li>
 <li><a href="#token">九、为什么同一个 Token 要生成三个版本？</a></li>
 <li><a href="#q-k">十、Q 和 K 怎么算相关性？</a></li>
 <li><a href="#_3">十一、点积到底代表什么？</a></li>
 <li><a href="#attention-score">十二、整个 Attention Score 矩阵</a></li>
-<li><a href="#d">十三、为什么还要除以 √d？</a></li>
+<li><a href="#d">十三、为什么还要除以 √d？</a><ul>
+<li><a href="#scaled">Scaled</a></li>
+</ul>
+</li>
 <li><a href="#softmax">十四、为什么要 Softmax？</a></li>
 <li><a href="#v_1">十五、最后为什么乘 V？</a></li>
-<li><a href="#_4">十六、一个极简例子</a></li>
+<li><a href="#_4">十六、一个极简例子</a><ul>
+<li><a href="#contextual-representation">Contextual Representation</a></li>
+</ul>
+</li>
 <li><a href="#self-attention-token">十七、Self-Attention 真正改变了 Token</a></li>
 <li><a href="#pytorch-attention">十八、PyTorch 手写一个最小 Attention</a></li>
 <li><a href="#batch">十九、加上 Batch 之后</a></li>
 <li><a href="#on2">二十、O(n²) 从哪来的？</a></li>
 <li><a href="#_5">二十一、为什么不是只看附近？</a></li>
-<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a></li>
+<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a><ul>
+<li><a href="#multi-head-attention">Multi-Head Attention</a></li>
+</ul>
+</li>
 <li><a href="#_6">二十三、多头注意力是什么？</a></li>
 <li><a href="#_7">二十四、多头怎么合回来？</a></li>
 <li><a href="#pytorch">二十五、PyTorch 里的形状变换</a></li>
 <li><a href="#attention_3">二十六、真正的多头 Attention</a></li>
-<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a></li>
+<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a><ul>
+<li><a href="#causal-mask">Causal Mask</a></li>
+</ul>
+</li>
 <li><a href="#causal-mask_1">二十八、Causal Mask</a></li>
 <li><a href="#mask">二十九、Mask 是怎么实现的？</a></li>
 <li><a href="#padding-mask-causal-mask">三十、Padding Mask 和 Causal Mask 不一样</a></li>
@@ -38,35 +60,57 @@
 <li><a href="#transformer">三十三、但 Transformer 还没完成</a></li>
 </ul>
 </div>
-</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 09 <span>/ 10 · 约 26 分钟</span></p><h1>所有词都在互相打量</h1><p class="topics">Self-Attention · Q/K/V · 多头注意力</p><div class="bridge">有了词向量，还需要让每个词看见自己的上下文。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 09 <span>/ 13 · 约 26 分钟</span></p><h1>所有词都在互相打量</h1><p class="topics">Self-Attention · Q/K/V · 多头注意力</p><div class="bridge">有了词向量，还需要让每个词看见自己的上下文。</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="" href="chapter-07.html" ><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="current" href="chapter-09.html" aria-current=page><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><div class="toc">
 <ul>
+<li><a href="#attention">Attention</a></li>
 <li><a href="#attention_1">一、Attention 最朴素的想法</a></li>
 <li><a href="#self-attention-self">二、Self-Attention 为什么叫“Self”</a></li>
 <li><a href="#_1">三、但模型怎么知道“该关注谁”？</a></li>
-<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a></li>
-<li><a href="#key">五、Key 是什么？</a></li>
-<li><a href="#v">六、那 V 又是什么？</a></li>
+<li><a href="#qkv">四、先把 Q、K、V 想成搜索系统</a><ul>
+<li><a href="#query">Query</a></li>
+</ul>
+</li>
+<li><a href="#key">五、Key 是什么？</a><ul>
+<li><a href="#key_1">Key</a></li>
+</ul>
+</li>
+<li><a href="#v">六、那 V 又是什么？</a><ul>
+<li><a href="#value">Value</a></li>
+</ul>
+</li>
 <li><a href="#_2">七、一个生活化比喻</a></li>
 <li><a href="#qkv_1">八、Q、K、V 是怎么来的？</a></li>
 <li><a href="#token">九、为什么同一个 Token 要生成三个版本？</a></li>
 <li><a href="#q-k">十、Q 和 K 怎么算相关性？</a></li>
 <li><a href="#_3">十一、点积到底代表什么？</a></li>
 <li><a href="#attention-score">十二、整个 Attention Score 矩阵</a></li>
-<li><a href="#d">十三、为什么还要除以 √d？</a></li>
+<li><a href="#d">十三、为什么还要除以 √d？</a><ul>
+<li><a href="#scaled">Scaled</a></li>
+</ul>
+</li>
 <li><a href="#softmax">十四、为什么要 Softmax？</a></li>
 <li><a href="#v_1">十五、最后为什么乘 V？</a></li>
-<li><a href="#_4">十六、一个极简例子</a></li>
+<li><a href="#_4">十六、一个极简例子</a><ul>
+<li><a href="#contextual-representation">Contextual Representation</a></li>
+</ul>
+</li>
 <li><a href="#self-attention-token">十七、Self-Attention 真正改变了 Token</a></li>
 <li><a href="#pytorch-attention">十八、PyTorch 手写一个最小 Attention</a></li>
 <li><a href="#batch">十九、加上 Batch 之后</a></li>
 <li><a href="#on2">二十、O(n²) 从哪来的？</a></li>
 <li><a href="#_5">二十一、为什么不是只看附近？</a></li>
-<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a></li>
+<li><a href="#attention_2">二十二、但是一个 Attention 头够吗？</a><ul>
+<li><a href="#multi-head-attention">Multi-Head Attention</a></li>
+</ul>
+</li>
 <li><a href="#_6">二十三、多头注意力是什么？</a></li>
 <li><a href="#_7">二十四、多头怎么合回来？</a></li>
 <li><a href="#pytorch">二十五、PyTorch 里的形状变换</a></li>
 <li><a href="#attention_3">二十六、真正的多头 Attention</a></li>
-<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a></li>
+<li><a href="#decoder">二十七、那 Decoder 为什么不能看未来？</a><ul>
+<li><a href="#causal-mask">Causal Mask</a></li>
+</ul>
+</li>
 <li><a href="#causal-mask_1">二十八、Causal Mask</a></li>
 <li><a href="#mask">二十九、Mask 是怎么实现的？</a></li>
 <li><a href="#padding-mask-causal-mask">三十、Padding Mask 和 Causal Mask 不一样</a></li>
@@ -1394,5 +1438,5 @@ LayerNorm
 Transformer
 </code></pre></div>
 
-<p>真正的大模型轮廓第一次完整出现了。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-08.html">← 上一章<span>文字如何进入神经网络</span></a><a href="chapter-10.html">下一章 →<span>深渊中的通天塔</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
-<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>
+<p>真正的大模型轮廓第一次完整出现了。</p></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-08.html">← 上一章<span>文字如何进入神经网络</span></a><a href="chapter-10.html">下一章 →<span>深渊中的通天塔</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>

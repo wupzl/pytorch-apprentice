@@ -39,7 +39,7 @@
   let previous;
   try { previous = JSON.parse(read('pa-progress') || 'null'); } catch {}
   const chapter = Number(document.body.dataset.chapter);
-  if ($('#resume') && previous && previous.chapter >= 1 && previous.chapter <= 10) {
+  if ($('#resume') && previous && previous.chapter >= 1 && previous.chapter <= Number(document.body.dataset.chapterCount)) {
     $('#resume').hidden = false; $('#resume').href = `chapter-${String(previous.chapter).padStart(2, '0')}.html`;
     $('#resume').textContent = `继续第 ${previous.chapter} 章 · ${Math.round((previous.ratio || 0) * 100)}% →`;
   }
@@ -82,7 +82,7 @@
   let queryVersion = 0;
   input.addEventListener('input', async () => {
     const version = ++queryVersion, q = input.value.trim().toLowerCase(); results.replaceChildren();
-    if (!q) { status.textContent = '输入关键词，搜索十章内容'; return; }
+    if (!q) { status.textContent = '输入关键词，搜索全书内容'; return; }
     status.textContent = '正在搜索…';
     try {
       const entries = await loadIndex(); if (version !== queryVersion) return;

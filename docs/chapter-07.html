@@ -1,24 +1,46 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>寻找最低山谷 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
-<body data-chapter="7"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
-<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>寻找最低山谷 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="7" data-chapter-count="13"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><details class="local-toc" open><summary>本章线索</summary><div class="toc">
 <ul>
-<li><a href="#_1">一、训练模型其实就是下山</a></li>
-<li><a href="#_2">二、梯度是什么？</a></li>
-<li><a href="#_3">三、学习率就是步子大小</a></li>
+<li><a href="#_1">一、训练模型其实就是下山</a><ul>
+<li><a href="#gradient">Gradient（梯度）</a></li>
+</ul>
+</li>
+<li><a href="#_2">二、梯度是什么？</a><ul>
+<li><a href="#learning-rate">Learning Rate（学习率）</a></li>
+</ul>
+</li>
+<li><a href="#_3">三、学习率就是步子大小</a><ul>
+<li><a href="#_4">情况一：学习率太大</a></li>
+<li><a href="#_5">情况二：学习率太小</a></li>
+</ul>
+</li>
 <li><a href="#sgd">四、最原始的优化器：SGD</a></li>
 <li><a href="#_6">五、为什么叫随机？</a></li>
 <li><a href="#sgd_1">六、SGD 的问题：像醉汉下山</a></li>
 <li><a href="#momentum">七、Momentum：给小球加惯性</a></li>
 <li><a href="#momentum_1">八、为什么 Momentum 有用？</a></li>
-<li><a href="#adam">九、Adam 登场</a></li>
+<li><a href="#adam">九、Adam 登场</a><ul>
+<li><a href="#adam_1">Adam</a></li>
+</ul>
+</li>
 <li><a href="#_7">十、为什么需要不同学习率？</a></li>
-<li><a href="#adam_2">十一、Adam 的核心思想</a></li>
+<li><a href="#adam_2">十一、Adam 的核心思想</a><ul>
+<li><a href="#1">1. 一阶矩</a></li>
+<li><a href="#2">2. 二阶矩</a></li>
+</ul>
+</li>
 <li><a href="#sgd-vs-momentum-vs-adam">十二、SGD vs Momentum vs Adam</a></li>
 <li><a href="#adamw-w">十三、AdamW 为什么多一个 W？</a></li>
 <li><a href="#adamw">十四、AdamW 的改进</a></li>
 <li><a href="#learning-rate-scheduler">十五、Learning Rate Scheduler</a></li>
-<li><a href="#scheduler">十六、常见 Scheduler</a></li>
+<li><a href="#scheduler">十六、常见 Scheduler</a><ul>
+<li><a href="#steplr">StepLR</a></li>
+<li><a href="#cosine-annealing">Cosine Annealing</a></li>
+<li><a href="#warmup">Warmup</a></li>
+</ul>
+</li>
 <li><a href="#_8">十七、一个真实训练配置</a></li>
 <li><a href="#schedulerstep">十八、为什么 scheduler.step() 在后面？</a></li>
 <li><a href="#_9">十九、梯度爆炸与梯度裁剪</a></li>
@@ -27,24 +49,46 @@
 <li><a href="#_11">二十二、林默终于理解了一个面试问题</a></li>
 </ul>
 </div>
-</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 07 <span>/ 10 · 约 16 分钟</span></p><h1>寻找最低山谷</h1><p class="topics">SGD · Momentum · AdamW · 学习率</p><div class="bridge">梯度算出来以后，参数究竟应该怎样迈出下一步？</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a></nav><div class="toc">
+</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 07 <span>/ 13 · 约 16 分钟</span></p><h1>寻找最低山谷</h1><p class="topics">SGD · Momentum · AdamW · 学习率</p><div class="bridge">梯度算出来以后，参数究竟应该怎样迈出下一步？</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节"><a class="" href="chapter-01.html" ><span>01</span>一块奇怪的石板</a><a class="" href="chapter-02.html" ><span>02</span>神经网络诞生</a><a class="" href="chapter-03.html" ><span>03</span>让神经网络学会拐弯</a><a class="" href="chapter-04.html" ><span>04</span>审判模型的法官</a><a class="" href="chapter-05.html" ><span>05</span>粮草与运输队</a><a class="" href="chapter-06.html" ><span>06</span>跨越两界</a><a class="current" href="chapter-07.html" aria-current=page><span>07</span>寻找最低山谷</a><a class="" href="chapter-08.html" ><span>08</span>文字如何进入神经网络</a><a class="" href="chapter-09.html" ><span>09</span>所有词都在互相打量</a><a class="" href="chapter-10.html" ><span>10</span>深渊中的通天塔</a><a class="" href="chapter-11.html" ><span>11</span>预测下一个词</a><a class="" href="chapter-12.html" ><span>12</span>显存里的战争</a><a class="" href="chapter-13.html" ><span>13</span>模型的第二次觉醒</a></nav><div class="toc">
 <ul>
-<li><a href="#_1">一、训练模型其实就是下山</a></li>
-<li><a href="#_2">二、梯度是什么？</a></li>
-<li><a href="#_3">三、学习率就是步子大小</a></li>
+<li><a href="#_1">一、训练模型其实就是下山</a><ul>
+<li><a href="#gradient">Gradient（梯度）</a></li>
+</ul>
+</li>
+<li><a href="#_2">二、梯度是什么？</a><ul>
+<li><a href="#learning-rate">Learning Rate（学习率）</a></li>
+</ul>
+</li>
+<li><a href="#_3">三、学习率就是步子大小</a><ul>
+<li><a href="#_4">情况一：学习率太大</a></li>
+<li><a href="#_5">情况二：学习率太小</a></li>
+</ul>
+</li>
 <li><a href="#sgd">四、最原始的优化器：SGD</a></li>
 <li><a href="#_6">五、为什么叫随机？</a></li>
 <li><a href="#sgd_1">六、SGD 的问题：像醉汉下山</a></li>
 <li><a href="#momentum">七、Momentum：给小球加惯性</a></li>
 <li><a href="#momentum_1">八、为什么 Momentum 有用？</a></li>
-<li><a href="#adam">九、Adam 登场</a></li>
+<li><a href="#adam">九、Adam 登场</a><ul>
+<li><a href="#adam_1">Adam</a></li>
+</ul>
+</li>
 <li><a href="#_7">十、为什么需要不同学习率？</a></li>
-<li><a href="#adam_2">十一、Adam 的核心思想</a></li>
+<li><a href="#adam_2">十一、Adam 的核心思想</a><ul>
+<li><a href="#1">1. 一阶矩</a></li>
+<li><a href="#2">2. 二阶矩</a></li>
+</ul>
+</li>
 <li><a href="#sgd-vs-momentum-vs-adam">十二、SGD vs Momentum vs Adam</a></li>
 <li><a href="#adamw-w">十三、AdamW 为什么多一个 W？</a></li>
 <li><a href="#adamw">十四、AdamW 的改进</a></li>
 <li><a href="#learning-rate-scheduler">十五、Learning Rate Scheduler</a></li>
-<li><a href="#scheduler">十六、常见 Scheduler</a></li>
+<li><a href="#scheduler">十六、常见 Scheduler</a><ul>
+<li><a href="#steplr">StepLR</a></li>
+<li><a href="#cosine-annealing">Cosine Annealing</a></li>
+<li><a href="#warmup">Warmup</a></li>
+</ul>
+</li>
 <li><a href="#_8">十七、一个真实训练配置</a></li>
 <li><a href="#schedulerstep">十八、为什么 scheduler.step() 在后面？</a></li>
 <li><a href="#_9">十九、梯度爆炸与梯度裁剪</a></li>
@@ -999,5 +1043,5 @@ Embedding
 神经网络
 </code></pre></div>
 
-<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-06.html">← 上一章<span>跨越两界</span></a><a href="chapter-08.html">下一章 →<span>文字如何进入神经网络</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
-<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>
+<hr /></article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章"><a href="chapter-06.html">← 上一章<span>跨越两界</span></a><a href="chapter-08.html">下一章 →<span>文字如何进入神经网络</span></a></nav></main></div><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>

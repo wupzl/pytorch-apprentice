@@ -1,6 +1,6 @@
 # PyTorch：炼金术士的学徒
 
-十章小说式 PyTorch 入门读物，从 Tensor 到 Transformer Block。现有十章已发布，第十一章待续。
+十三章小说式 PyTorch 入门读物，从 Tensor 到 Transformer、Mini-GPT、显存优化和后训练。现有十三章已发布，第十四章待续。
 
 - 网站：https://wupzl.github.io/pytorch-apprentice/
 - 手机与桌面阅读，全书正文搜索、阅读位置记忆、字号调整、深浅色模式、代码高亮与复制。
@@ -20,7 +20,13 @@ python -m http.server 4174 --directory docs
 
 编辑 chapters/ 下的 Markdown，再运行 python build.py。请勿在日常构建中运行 prepare.py：它是一次性导入工具，会从原稿重新生成章节。
 
-source/pytorch-original.md 完整保存原稿，EDITORIAL.md 记录整理与技术校正。examples/ 包含两份独立运行示例，详见网站“运行代码”页。PyTorch 是运行示例的独立依赖，不是生成或访问网站的依赖。
+source/pytorch-original.md 与 source/pytorch-continue-original.md 完整保存两份原稿，EDITORIAL.md 记录整理与技术校正。examples/ 包含训练循环、Transformer、Mini-GPT、LoRA、SFT/DPO 五份独立运行示例，详见网站“运行代码”页。PyTorch 是运行示例的独立依赖，不是生成或访问网站的依赖。
+
+prepare_continue.py 也是一次性导入工具，不应在日常构建时运行，以免覆盖已编辑的新章节。追加章节后请更新 build.py 中的章节元数据；页面章节总数与继续阅读范围由该元数据生成。
+
+## 验证
+
+安装 PyTorch 后，运行 python verify_examples.py，验证新章节核心算法并训练一个极小字符级 GPT。网页验证另需安装 playwright 与 Chromium，启动上述 4174 端口预览后运行 python verify.py。验证范围与限制见 VALIDATION.md。
 
 ## 发布
 

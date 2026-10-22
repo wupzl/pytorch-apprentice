@@ -10,16 +10,22 @@ NAMES = ['一块奇怪的石板', '神经网络诞生', '让神经网络学会�
 TOPICS = ['Tensor · Autograd · 第一次训练', 'nn.Module · Linear · Parameter', '激活函数 · ReLU · 非线性', 'Loss · MSE · Softmax · CrossEntropy', 'Dataset · DataLoader · Batch · Epoch', 'GPU · CUDA · train() · eval()', 'SGD · Momentum · AdamW · 学习率', 'Token · Embedding · 词表与位置', 'Self-Attention · Q/K/V · 多头注意力', 'Residual · LayerNorm · FFN · Transformer Block']
 BRIDGES = ['从一个数字开始，看参数怎样迈出学习的第一步。', '把上一章的一个参数，组织成可以管理和训练的网络。', '网络已经成形，但要学会复杂规律，还得拥有“拐弯”的能力。', '有了表达能力，还需要一把衡量预测好坏的尺子。', '训练逻辑已经完整，现在让成千上万条数据有序进入模型。', '数据可以分批送达了，接下来跨越设备与运行模式的边界。', '梯度算出来以后，参数究竟应该怎样迈出下一步？', '把训练框架带到文字世界，先让词语拥有数值表示。', '有了词向量，还需要让每个词看见自己的上下文。', '把信息交互与特征加工组装起来，让深层网络站稳。']
 
+NAMES += ['预测下一个词', '显存里的战争', '模型的第二次觉醒']
+TOPICS += ['Mini-GPT · 因果语言建模 · 采样与 KV Cache', 'AMP · 梯度累积 · Checkpoint · LoRA / QLoRA', 'SFT · Prompt Mask · DPO · RLHF / PPO']
+BRIDGES += ['让上一章的 Transformer 学会预测下一个 Token，再把预测接回输入，生成第一段文字。', '模型会生成文字了，但训练还必须面对显存、精度和计算成本的约束。', '能够完成训练之后，还要让训练目标更贴近任务，用独立评测检验模型是否真正进步。']
+COUNT = len(NAMES)
+assert COUNT == len(TOPICS) == len(BRIDGES)
+
 def page(title, body, chapter=0):
     return f'''<!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>{html.escape(title)} · PyTorch 炼金术士的学徒</title><script>try{{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}}catch(e){{}}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
-<body data-chapter="{chapter}"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
-{body}<footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
-<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>'''
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>{html.escape(title)} · PyTorch 炼金术士的学徒</title><script>try{{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}}catch(e){{}}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="{chapter}" data-chapter-count="{COUNT}"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+{body}<footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>'''
 
 search = []
 metadata = []
-for i in range(10):
+for i in range(COUNT):
     source = (ROOT / 'chapters' / f'{i+1:02}.md').read_text(encoding='utf-8')
     math = []
     def stash(m):
@@ -28,7 +34,7 @@ for i in range(10):
     chunks = re.split(r'(```.*?```|`[^`\n]+`)', source, flags=re.S)
     for j in range(0,len(chunks),2):
         chunks[j] = re.sub(r'\\\[(.*?)\\\]|\\\((.*?)\\\)',stash,chunks[j],flags=re.S)
-    md = markdown.Markdown(extensions=['fenced_code','tables','toc','sane_lists','codehilite'], extension_configs={'toc': {'toc_depth':'2-2'}, 'codehilite':{'guess_lang':False}})
+    md = markdown.Markdown(extensions=['fenced_code','tables','toc','sane_lists','codehilite','md_in_html'], extension_configs={'toc': {'toc_depth':'2-3'}, 'codehilite':{'guess_lang':False}})
     rendered = md.convert(''.join(chunks))
     if math:
         result = subprocess.run(['node', str(ROOT / 'render-math.cjs')], input=json.dumps(math), text=True, encoding='utf-8',capture_output=True)
@@ -39,25 +45,25 @@ for i in range(10):
     rendered = re.sub(r'<p>(<math.*?</math>)</p>',r'\1',rendered,flags=re.S)
     minutes = max(5,round(len(source)/450))
     metadata.append({'number':i+1,'title':NAMES[i],'topics':TOPICS[i],'minutes':minutes})
-    booknav = ''.join(f'<a class="{"current" if k==i else ""}" href="chapter-{k+1:02}.html" {"aria-current=page" if k==i else ""}><span>{k+1:02}</span>{NAMES[k]}</a>' for k in range(10))
+    booknav = ''.join(f'<a class="{"current" if k==i else ""}" href="chapter-{k+1:02}.html" {"aria-current=page" if k==i else ""}><span>{k+1:02}</span>{NAMES[k]}</a>' for k in range(COUNT))
     nav = (f'<a href="chapter-{i:02}.html">← 上一章<span>{NAMES[i-1]}</span></a>' if i else '<a href="index.html">← 全书目录<span>回到旅程起点</span></a>')
-    nav += (f'<a href="chapter-{i+2:02}.html">下一章 →<span>{NAMES[i+1]}</span></a>' if i<9 else '<a href="index.html">本卷读毕 →<span>第十一章待续 · 返回目录</span></a>')
-    body = f'''<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节">{booknav}</nav><details class="local-toc" open><summary>本章线索</summary>{md.toc}</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER {i+1:02} <span>/ 10 · 约 {minutes} 分钟</span></p><h1>{NAMES[i]}</h1><p class="topics">{TOPICS[i]}</p><div class="bridge">{BRIDGES[i]}</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节">{booknav}</nav>{md.toc}</details><article>{rendered}</article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章">{nav}</nav></main></div>'''
+    nav += (f'<a href="chapter-{i+2:02}.html">下一章 →<span>{NAMES[i+1]}</span></a>' if i<COUNT-1 else '<a href="index.html">读到这里 →<span>第十四章待续 · 返回目录</span></a>')
+    body = f'''<div class="reader-layout"><aside class="sidebar"><p class="eyebrow">THE APPRENTICE’S PATH</p><nav aria-label="全书章节">{booknav}</nav><details class="local-toc" open><summary>本章线索</summary>{md.toc}</details></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER {i+1:02} <span>/ {COUNT} · 约 {minutes} 分钟</span></p><h1>{NAMES[i]}</h1><p class="topics">{TOPICS[i]}</p><div class="bridge">{BRIDGES[i]}</div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav aria-label="移动端章节">{booknav}</nav>{md.toc}</details><article>{rendered}</article><section class="practice"><p class="eyebrow">FROM STORY TO CODE</p><h2>把理解带回编辑器</h2><p>小片段用于解释概念，需结合本章上下文。完整示例与运行步骤放在独立页面，CPU 即可起步。</p><a href="practice.html">查看完整示例与运行说明 →</a></section><nav class="chapter-nav" aria-label="上下章">{nav}</nav></main></div>'''
     (OUT / f'chapter-{i+1:02}.html').write_text(page(NAMES[i],body,i+1),encoding='utf-8')
     # Search by section; include the body and code rather than headings alone.
-    sections = re.split(r'(?m)^## ',source)
-    headings = re.findall(r'<h2 id="([^"]+)">(.*?)</h2>',rendered)
+    sections = re.split(r'(?m)^#{2,3} ',source)
+    headings = re.findall(r'<h[23] id="([^"]+)">(.*?)</h[23]>',rendered)
     for j,section in enumerate(sections):
         text = re.sub(r'[`#*>\[\]]','',section)
         search.append({'chapter':i+1,'title':NAMES[i], 'section':html.unescape(re.sub('<[^>]+>','',headings[j-1][1])) if j and j<=len(headings) else '故事开始','url':f'chapter-{i+1:02}.html'+('#'+headings[j-1][0] if j and j<=len(headings) else ''),'text':text})
 
 cards = ''
-stages = ['01 / 建立直觉','02 / 训练成环','03 / 走向语言模型']
-for i in range(10):
-    if i in (0,3,7):
-        cards += f'<div class="stage"><span>{stages[(0,3,7).index(i)]}</span><i></i></div>'
+stages = ['01 / 建立直觉','02 / 训练成环','03 / 走向语言模型', '04 / 从生成到后训练']
+for i in range(COUNT):
+    if i in (0,3,7,10):
+        cards += f'<div class="stage"><span>{stages[(0,3,7,10).index(i)]}</span><i></i></div>'
     cards += f'<a class="chapter-card" href="chapter-{i+1:02}.html"><span class="chapter-number">{i+1:02}</span><div><h3>{NAMES[i]}</h3><p>{TOPICS[i]}</p></div><span class="card-meta">约 {metadata[i]["minutes"]} 分钟 <b>↗</b></span></a>'
-home = f'''<main id="main" class="home"><section class="hero"><div class="hero-copy"><p class="eyebrow">一部循序渐进的 PYTORCH 技术小说</p><h1>每一个模型，<br>都从<span>好奇</span>开始。</h1><p class="hero-subtitle">PyTorch：炼金术士的学徒</p><p class="intro">凌晨两点，林默敲下 <code>import torch</code>。<br>一个数字，一次求导，一座逐渐成形的 Transformer。<br>跟随他与陈教授，把原理一步步写成可以理解的代码。</p><div class="hero-actions"><a class="primary" href="chapter-01.html">翻开第一章 <span>→</span></a><a id="resume" class="resume" href="chapter-01.html" hidden>继续上次阅读 →</a></div><p class="hero-note">10 个章节 <span>·</span> 无需登录 <span>·</span> 从 Tensor 到 Transformer</p></div><div class="book-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="book"><p>THE APPRENTICE<br>OF PYTORCH</p><div class="book-title">炼金术士<br>的学徒<span>从数字，到智能。</span></div><div class="book-symbol">∂<span>从一次微小的变化开始</span></div><div class="book-bottom">TENSOR → TRANSFORMER<span>VOL. 01</span></div></div><span class="art-note">一行代码，打开一个世界。</span></div></section><section class="journey"><p class="eyebrow">A PATH, NOT A PILE OF APIS</p><h2>先遇见问题，再认识答案。</h2><p>不急着堆满术语。从林默的一个疑问出发，让下一步知识成为上一步困惑的答案。</p><div class="path"><span>数字与梯度</span><b>→</b><span>网络与训练</span><b>→</b><span>文字与注意力</span><b>→</b><span>Transformer</span></div></section><section class="catalog"><div class="catalog-heading"><div><p class="eyebrow">TEN CHAPTERS · ONE CONNECTED STORY</p><h2>学徒的十次进阶</h2></div><a href="practice.html">准备好运行代码了吗？ ↗</a></div><div class="chapter-list">{cards}</div><div class="coming"><span>11</span><div><h3>预测下一个词</h3><p>从 Transformer 到 GPT 的诞生 · 待续</p></div><span class="tag">尚未发布</span></div></section><section class="reading-note"><h2>怎样读这本书</h2><p>建议按章节顺序阅读，跟着问题往前走。你不需要预先掌握深度学习，但最好了解基础 Python；前两章会从最小例子搭起训练直觉。</p><p>代码片段帮助理解概念，完整示例用于动手验证。阅读位置只保存在当前浏览器中。<a href="editorial.html">查看内容整理说明 →</a></p></section></main>'''
+home = f'''<main id="main" class="home"><section class="hero"><div class="hero-copy"><p class="eyebrow">一部循序渐进的 PYTORCH 技术小说</p><h1>每一个模型，<br>都从<span>好奇</span>开始。</h1><p class="hero-subtitle">PyTorch：炼金术士的学徒</p><p class="intro">凌晨两点，林默敲下 <code>import torch</code>。<br>一个数字，一次求导，一座逐渐成形的 Transformer。<br>跟随他与陈教授，把原理一步步写成可以理解的代码。</p><div class="hero-actions"><a class="primary" href="chapter-01.html">翻开第一章 <span>→</span></a><a id="resume" class="resume" href="chapter-01.html" hidden>继续上次阅读 →</a></div><p class="hero-note">{COUNT} 个章节 <span>·</span> 无需登录 <span>·</span> 从 Tensor 到 GPT 与后训练</p></div><div class="book-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="book"><p>THE APPRENTICE<br>OF PYTORCH</p><div class="book-title">炼金术士<br>的学徒<span>从数字，到智能。</span></div><div class="book-symbol">∂<span>从一次微小的变化开始</span></div><div class="book-bottom">TENSOR → TRANSFORMER<span>VOL. 01</span></div></div><span class="art-note">一行代码，打开一个世界。</span></div></section><section class="journey"><p class="eyebrow">A PATH, NOT A PILE OF APIS</p><h2>先遇见问题，再认识答案。</h2><p>不急着堆满术语。从林默的一个疑问出发，让下一步知识成为上一步困惑的答案。</p><div class="path"><span>数字与梯度</span><b>→</b><span>网络与训练</span><b>→</b><span>文字与注意力</span><b>→</b><span>GPT 与后训练</span></div></section><section class="catalog"><div class="catalog-heading"><div><p class="eyebrow">THIRTEEN CHAPTERS · ONE CONNECTED STORY</p><h2>学徒的十三次进阶</h2></div><a href="practice.html">准备好运行代码了吗？ ↗</a></div><div class="chapter-list">{cards}</div><div class="coming"><span>14</span><div><h3>失控的训练工厂</h3><p>分布式训练 · DDP · FSDP · ZeRO · 待续</p></div><span class="tag">尚未发布</span></div></section><section class="reading-note"><h2>怎样读这本书</h2><p>建议按章节顺序阅读，跟着问题往前走。你不需要预先掌握深度学习，但最好了解基础 Python；前两章会从最小例子搭起训练直觉。</p><p>代码片段帮助理解概念，完整示例用于动手验证。阅读位置只保存在当前浏览器中。<a href="editorial.html">查看内容整理说明 →</a></p></section></main>'''
 (OUT/'index.html').write_text(page('全书目录',home),encoding='utf-8')
 practice = '''# 从故事到编辑器
 
@@ -108,6 +114,13 @@ python examples/transformer.py
 
 ```python
 '''+(ROOT/'examples/transformer.py').read_text(encoding='utf-8')+'\n```\n'
+for filename, title, description in [
+    ('mini_gpt.py', '示例三：字符级 Mini-GPT', '对应第十一章。极小语料训练与生成，CPU 可运行，不代表通用问答能力；默认 200 步，可用 --steps 调整。没有实现 KV Cache。'),
+    ('lora.py', '示例四：LoRA 的冻结与梯度', '对应第十二章。验证初始输出不变、基础权重冻结，以及第一步 B 获得梯度、之后 A 参与学习。'),
+    ('post_training.py', '示例五：SFT 与 DPO 的目标', '对应第十三章。验证首个回答 Token 对齐、Prompt/PAD 目标屏蔽、回答 logp 求和与 DPO 梯度方向。这是核心损失实验，不是完整 SFT/DPO 训练系统。'),
+]:
+    practice += f'\n## {title}\n\n{description}\n\n```bash\npython examples/{filename}\n```\n\n[下载 {filename}](examples/{filename})\n\n```python\n' + (ROOT/'examples'/filename).read_text(encoding='utf-8') + '\n```\n'
+practice += '\n## GPU 代码的适用范围\n\n第十二章 AMP、QLoRA 与高效 SDPA 后端片段按兼容 GPU 环境说明，尚未在本项目中完成 GPU 实测。QLoRA 还需要 Transformers、PEFT、bitsandbytes 和可访问的实际模型。请先按对应官方文档核对兼容性；显存表是带假设的静态估算，不是硬件实测。\n'
 for name,title,text in [('practice','运行代码',practice),('editorial','内容整理说明',(ROOT/'EDITORIAL.md').read_text(encoding='utf-8'))]:
     body = markdown.markdown(text,extensions=['fenced_code','tables','codehilite'],extension_configs={'codehilite':{'guess_lang':False}})
     (OUT/f'{name}.html').write_text(page(title,f'<main id="main" class="standalone"><a href="index.html">← 返回全书目录</a><article>{body}</article></main>'),encoding='utf-8')
@@ -120,6 +133,6 @@ for name in ['style.css','app.js']:
 for p in (ROOT/'examples').glob('*.py'):
     shutil.copyfile(p,OUT/'examples'/p.name)
 (OUT/'.nojekyll').touch()
-print('Built 13 pages, 10 chapters, section search and local MathML formulas.')
+print(f'Built {COUNT + 3} pages, {COUNT} chapters, section search and local MathML formulas.')
 
 shutil.copyfile(ROOT / 'assets' / 'shelf-nav.css', OUT / 'shelf-nav.css')

@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十章渐进式技术小说理解 PyTorch：从 Tensor 到 Transformer。"><title>内容整理说明 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
-<body data-chapter="0"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="跟随林默与陈教授，用十三章渐进式技术小说理解 PyTorch：从 Tensor 到 GPT 与后训练。"><title>内容整理说明 · PyTorch 炼金术士的学徒</title><script>try{document.documentElement.dataset.theme=localStorage.getItem('pa-theme')||'light';document.documentElement.style.setProperty('--reader-size',(Number(localStorage.getItem('pa-size'))||18)+'px')}catch(e){}</script><link rel="stylesheet" href="style.css"><script src="app.js" defer></script><link rel="stylesheet" href="shelf-nav.css"></head>
+<body data-chapter="0" data-chapter-count="13"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header class="topbar"><a class="brand" href="index.html"><span class="emblem" aria-hidden="true">P<span>↗</span></span><span>炼金术士的学徒<small>A PYTORCH STORY</small></span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/" aria-current="true">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书">搜索 <kbd>/</kbd></button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换深浅色主题">◐</button></div></header>
 <main id="main" class="standalone"><a href="index.html">← 返回全书目录</a><article><h1>内容整理说明</h1>
-<p>这是一部以林默和陈教授的对话串起概念的 PyTorch 入门读物。本次发布现有十章；第十一章仅有预告，标记为待续。</p>
+<p>这是一部以林默和陈教授的对话串起概念的 PyTorch 入门读物。当前发布十三章；第十四章仅有预告，标记为待续。</p>
 <h2>保留了什么</h2>
 <p>保留十章学习顺序与主要情节：Tensor → 自动求导 → Module → 非线性 → Loss → 数据与设备 → 优化器 → Embedding → Attention → Transformer Block。它们已构成连贯的入门路线，无需整体重写。</p>
 <h2>改良了什么</h2>
@@ -16,6 +16,18 @@
 <li>增加两份独立可运行示例及安装、运行说明。</li>
 </ul>
 <h2>技术资料</h2>
+<h3>2026-10-22 续写整理</h3>
+<ul>
+<li>合并第 11–13 章，移除已经发布章节的重复长预告，保留第十四章待续；原稿另存 source/pytorch-continue-original.md。</li>
+<li>修复 Mini-GPT、采样、AMP、梯度累积、LoRA、SDPA、QLoRA、SFT 与 DPO 代码丢失换行的问题，规范章节与幕、小节的层级。</li>
+<li>区分预先移位的下一 Token 标签与在 Loss 中移位的 SFT 标签；补清第一回答 Token 的监督位置、Prompt/PAD 标签屏蔽和 Attention Mask 的区别。</li>
+<li>明确梯度累积按实际有效样本/Token 加权、末尾不足窗口也需更新，以及 AMP 的缩放更新时机。</li>
+<li>将原稿显存交互界面残留改为静态估算表，明确数据并行假设、GB/GiB 和 FP32 AdamW 状态预算，不宣称硬件实测。</li>
+<li>LoRA 参数跟随基础层的设备和 dtype，说明 B 零初始化时的首步梯度；QLoRA 改用明确的单卡设备配置，区分加载骨架与完整训练。</li>
+<li>澄清经典 DPO 参考模型与相对偏好目标；经典 RLHF 的奖励模型也常来自成对偏好，不能简单按是否有偏好对区分两者。</li>
+<li>保留三章原有五道练习并附折叠答案，新增 Mini-GPT、LoRA、SFT/DPO 的 CPU 可运行示例。</li>
+</ul>
+<p>补充参考：<a href="https://docs.pytorch.org/docs/stable/notes/amp_examples.html">AMP 与梯度累积</a>、<a href="https://docs.pytorch.org/docs/stable/checkpoint.html">Activation Checkpoint</a>、<a href="https://huggingface.co/docs/peft/developer_guides/quantization">PEFT 量化训练</a>、<a href="https://huggingface.co/docs/transformers/quantization/bitsandbytes">bitsandbytes</a>、<a href="https://huggingface.co/docs/trl/dpo_trainer">DPO Trainer</a>。</p>
 <p>易错 API 说明对照以下官方资料整理。文中类比服务于直觉理解，并非对实际模型内部行为的精确描述。</p>
 <ul>
 <li><a href="https://docs.pytorch.org/docs/stable/notes/autograd.html">Autograd 与评估模式</a></li>
@@ -28,5 +40,5 @@
 </ul>
 <h2>文件与维护</h2>
 <p>原稿完整保留在 source/pytorch-original.md。chapters/ 是整理后的内容源，后续修改这里，再运行 python build.py。构建不会重新导入原稿，避免覆盖人工编辑。prepare.py 仅用于首次导入，不应在日常构建时运行。</p>
-<p>阅读进度、主题和字号仅保存在当前浏览器，不跨设备同步。搜索覆盖正文与代码，首次打开搜索时加载本地索引。正文、代码高亮、公式和字体显示不依赖外部 CDN。</p></article></main><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十章 · 第十一章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
-<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索十章内容</p><div id="search-results"></div></dialog></body></html>
+<p>阅读进度、主题和字号仅保存在当前浏览器，不跨设备同步。搜索覆盖正文与代码，首次打开搜索时加载本地索引。正文、代码高亮、公式和字体显示不依赖外部 CDN。</p></article></main><footer><a href="index.html">PyTorch：炼金术士的学徒</a><p>故事引路，代码落地。<span>现有十三章 · 第十四章待续</span></p><a href="https://github.com/wupzl/pytorch-apprentice">项目源码 ↗</a></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">在故事里寻找答案</h2><button id="search-close" aria-label="关闭搜索">关闭 ×</button></div><label for="query">关键词或代码，例如 Tensor、梯度、zero_grad</label><input id="query" type="search" autocomplete="off" placeholder="搜索全书正文…"><p id="search-status" role="status">输入关键词，搜索全书内容</p><div id="search-results"></div></dialog></body></html>

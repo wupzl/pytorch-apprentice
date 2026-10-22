@@ -8,3 +8,5 @@
 
 /* Keep decorative orbits inside the book illustration on tablet screens. */
 .book-art{overflow:clip}
+
+.answers{margin:30px 0;padding:18px 22px;background:var(--soft);border:1px solid var(--line);border-radius:5px}.answers summary{cursor:pointer;color:var(--accent);font-size:.85em}.answers ol{font-size:.9em}.answers li{margin:12px 0}
