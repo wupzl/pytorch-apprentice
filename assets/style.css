@@ -10,3 +10,5 @@
 .book-art{overflow:clip}
 
 .answers{margin:30px 0;padding:18px 22px;background:var(--soft);border:1px solid var(--line);border-radius:5px}.answers summary{cursor:pointer;color:var(--accent);font-size:.85em}.answers ol{font-size:.9em}.answers li{margin:12px 0}
+
+:root[data-theme=white]{--bg:#fff;--paper:#fff;--ink:#202124;--text:#202124;--muted:#62676d;--line:#e3e6ea;--accent:#176a86;--soft:#f5f7f9;--code:#f6f8fa;color-scheme:light}:root[data-theme=white] body,:root[data-theme=white] header,:root[data-theme=white] aside,:root[data-theme=white] .sidebar{background:#fff;color:#202124}#theme{min-width:48px;width:auto!important}
