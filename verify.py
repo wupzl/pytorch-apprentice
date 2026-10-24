@@ -2,6 +2,7 @@
 from pathlib import Path
 import ast, re, json
 from html.parser import HTMLParser
+from urllib.parse import unquote, urlsplit
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parent
@@ -20,21 +21,27 @@ assert len(pages)==16
 parsers={}
 for page in pages:
     p=Links(); p.feed(page.read_text(encoding='utf-8')); parsers[page.name]=p
+def check_link(name, link):
+    target = urlsplit(link)
+    # Root-relative project navigation is checked by the bookshelf verifier.
+    if target.scheme or target.netloc or target.path.startswith('/'):
+        return
+    filename = unquote(target.path) or name
+    anchor = unquote(target.fragment)
+    assert (ROOT/'docs'/filename).is_file(), (name, link)
+    if anchor and filename in parsers:
+        assert anchor in parsers[filename].ids, (name, link)
+
 for name,p in parsers.items():
     for link in p.links:
-        if link.startswith(('http:','https:')) or link in ('/', '/pytorch-apprentice/', '/ai-era-reader/', '/data-empire-reader/'): continue
-        filename,_,anchor=link.partition('#')
-        filename=filename or name
-        assert (ROOT/'docs'/filename).exists(), (name,link)
-        if anchor and filename in parsers: assert anchor in parsers[filename].ids,(name,link)
+        check_link(name, link)
 for path in (ROOT/'chapters').glob('*.md'):
     text=path.read_text(encoding='utf-8')
     assert text.count('```')%2==0
     for code in re.findall(r'```python\n(.*?)```',text,re.S):
         ast.parse(code,filename=str(path))
 for entry in json.loads((ROOT/'docs/search.json').read_text(encoding='utf-8')):
-    filename,_,anchor=entry['url'].partition('#')
-    assert not anchor or anchor in parsers[filename].ids
+    check_link('index.html', entry['url'])
 with sync_playwright() as pw:
     browser=pw.chromium.launch()
     for width in (390,1440):
@@ -63,6 +70,13 @@ with sync_playwright() as pw:
         page.keyboard.press('Escape'); page.locator('#search-dialog').wait_for(state='hidden')
         page.goto('http://127.0.0.1:4174/chapter-13.html')
         assert page.locator('math').count()>20
+        assert page.locator('html').get_attribute('data-theme')=='white'
+        for theme in ('light', 'dark', 'white'):
+            page.locator('#theme').click()
+            assert page.locator('html').get_attribute('data-theme')==theme
+            page.reload()
+            assert page.locator('html').get_attribute('data-theme')==theme
+        page.locator('#theme').click()
         page.locator('#theme').click()
         assert page.locator('html').get_attribute('data-theme')=='dark'
         page.locator('#larger').click()
