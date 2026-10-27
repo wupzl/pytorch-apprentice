@@ -37,3 +37,6 @@ GitHub Pages 使用 main 分支的 /docs 目录。所有内部资源使用相对
 进度、主题、字号只存储在当前浏览器，不跨设备同步。网页不执行 Python。概念演示不代表模型对未知数据的泛化效果。
 
 KaTeX 保留上游许可证，见 vendor/KaTeX-LICENSE.txt。尚未为原创正文与项目整体指定开源许可。
+
+
+项目切换菜单已接入 [Agent 帝国：代码审判者](https://wupzl.github.io/coding-agent-reader/)，九章小说式 Coding Agent 工程阅读。
